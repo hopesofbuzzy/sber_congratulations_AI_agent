@@ -1,16 +1,47 @@
 {% extends "base.html" %}
 {% block content %}
   <div class="d-flex align-items-center justify-content-between mb-3">
-    <div>
+    <div class="page-intro">
       <h2 class="mb-1">Greetings</h2>
-      <div class="text-muted">Сгенерированные поздравления</div>
+      <div class="text-muted">Сгенерированные поздравления, review-flow для VIP и feedback менеджеров.</div>
     </div>
   </div>
 
-  <div class="card">
+  {% if msg %}
+    <div class="alert alert-success">{{ msg }}</div>
+  {% endif %}
+  {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+  {% endif %}
+
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-md-4">
+      <div class="surface-panel metric-card">
+        <div class="metric-label">Generated</div>
+        <div class="metric-value">{{ greetings | length }}</div>
+        <div class="metric-hint">Всего поздравлений в системе.</div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="surface-panel metric-card">
+        <div class="metric-label">Needs approval</div>
+        <div class="metric-value">{{ greetings | selectattr('status', 'equalto', 'needs_approval') | list | length }}</div>
+        <div class="metric-hint">VIP-поздравления, ожидающие решения менеджера.</div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="surface-panel metric-card">
+        <div class="metric-label">Feedback saved</div>
+        <div class="metric-value">{{ greetings | selectattr('feedback_entries') | list | length }}</div>
+        <div class="metric-hint">Поздравления, для которых уже сохранён операторский feedback.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="surface-card">
     <div class="card-header">Список поздравлений</div>
     <div class="card-body table-responsive">
-      <table class="table table-sm align-middle">
+      <table class="table table-sm align-middle table-clean">
         <thead>
           <tr>
             <th>ID</th>
@@ -19,13 +50,14 @@
             <th>Status</th>
             <th>Actions</th>
             <th>Subject</th>
+            <th>Feedback</th>
             <th>Card</th>
           </tr>
         </thead>
         <tbody>
           {% for g in greetings %}
             <tr>
-              <td>{{ g.id }}</td>
+              <td class="fw-semibold">#{{ g.id }}</td>
               <td class="small">
                 <div class="fw-semibold">{{ g.event.title if g.event else g.event_id }}</div>
                 <div class="text-muted">{{ g.event.event_date if g.event else "" }}</div>
@@ -34,6 +66,12 @@
                 {% if g.client %}
                   <div class="fw-semibold">{{ g.client.first_name }} {{ g.client.middle_name or "" }} {{ g.client.last_name }}</div>
                   <div class="text-muted">segment: {{ g.client.segment }}</div>
+                  {% if g.client.official_company_name or g.client.company_name %}
+                    <div class="text-muted">{{ g.client.official_company_name or g.client.company_name }}</div>
+                  {% endif %}
+                  {% if g.client.okved_name %}
+                    <div class="text-muted small">ОКВЭД: {{ g.client.okved_name }}</div>
+                  {% endif %}
                 {% else %}
                   {{ g.client_id }}
                 {% endif %}
@@ -57,7 +95,7 @@
               </td>
               <td class="small">
                 {% if g.status == "needs_approval" %}
-                  <div class="d-flex gap-2">
+                  <div class="d-flex gap-2 flex-wrap">
                     <form method="post" action="/actions/greetings/{{ g.id }}/approve">
                       <button class="btn btn-sm btn-success">Approve</button>
                     </form>
@@ -72,16 +110,60 @@
               </td>
               <td class="small">
                 <div class="fw-semibold">{{ g.subject }}</div>
-                <details class="mt-1">
+                <details class="mt-2">
                   <summary class="text-muted">body</summary>
-                  <pre class="small mb-0" style="white-space: pre-wrap;">{{ g.body }}</pre>
+                  <pre class="small mb-0 mt-2 p-3 rounded-4 border bg-light" style="white-space: pre-wrap;">{{ g.body }}</pre>
                 </details>
+              </td>
+              <td class="small" style="min-width: 260px;">
+                {% if g.feedback_entries %}
+                  {% set latest = g.feedback_entries[-1] %}
+                  <div class="mb-2">
+                    <span class="badge text-bg-success">score: {{ latest.score or "n/a" }}</span>
+                    <span class="badge text-bg-light">{{ latest.outcome }}</span>
+                  </div>
+                  {% if latest.notes %}
+                    <div class="text-muted mb-2">{{ latest.notes }}</div>
+                  {% endif %}
+                {% endif %}
+                <form method="post" action="/actions/greetings/{{ g.id }}/feedback" class="row g-1">
+                  <div class="col-4">
+                    <select class="form-select form-select-sm" name="score">
+                      <option value="">score</option>
+                      <option value="5">5</option>
+                      <option value="4">4</option>
+                      <option value="3">3</option>
+                      <option value="2">2</option>
+                      <option value="1">1</option>
+                    </select>
+                  </div>
+                  <div class="col-8">
+                    <select class="form-select form-select-sm" name="outcome">
+                      <option value="unknown">unknown</option>
+                      <option value="opened">opened</option>
+                      <option value="replied">replied</option>
+                      <option value="ignored">ignored</option>
+                    </select>
+                  </div>
+                  <div class="col-12">
+                    <input class="form-control form-control-sm" name="notes" placeholder="Комментарий менеджера">
+                  </div>
+                  <div class="col-12">
+                    <button class="btn btn-sm btn-outline-primary">Save feedback</button>
+                  </div>
+                </form>
               </td>
               <td class="small">
                 {% if g.image_path %}
-                  <img src="/data/{{ g.image_path }}" alt="card" style="max-width: 200px; border-radius: 4px;" />
+                  <img src="/data/{{ g.image_path }}" alt="card" class="card-preview" />
+                {% else %}
+                  <div class="soft-note">Открытка будет доступна после генерации.</div>
                 {% endif %}
               </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="8" class="empty-state">Поздравлений пока нет. Запустите агент, чтобы заполнить эту страницу.</td>
             </tr>
           {% endfor %}
         </tbody>

@@ -1,109 +1,175 @@
 {% extends "base.html" %}
 {% block content %}
-  <div class="d-flex align-items-center justify-content-between mb-3">
-    <div>
-      <h2 class="mb-1">Dashboard</h2>
-      <div class="text-muted">Обзор данных и статусов конвейера поздравлений</div>
+  <div class="hero-card mb-4">
+    <div class="row g-4 align-items-center">
+      <div class="col-12 col-xl-8">
+        <div class="hero-badge mb-3">Control center</div>
+        <h1 class="h2 mb-3">Sber congratulations pipeline</h1>
+        <p class="mb-0 text-soft">
+          Панель управления демонстрирует полный цикл: подготовку клиентских профилей, enrichment компаний,
+          генерацию поздравлений, human-in-the-loop review и фиксацию доставок.
+        </p>
+      </div>
+      <div class="col-12 col-xl-4">
+        <div class="kpi-strip justify-content-xl-end">
+          <div class="kpi-pill">
+            <span class="text-muted small">clients</span>
+            <b>{{ clients_count }}</b>
+          </div>
+          <div class="kpi-pill">
+            <span class="text-muted small">enriched</span>
+            <b>{{ enriched_clients_count }}</b>
+          </div>
+          <div class="kpi-pill">
+            <span class="text-muted small">feedback</span>
+            <b>{{ feedback_count }}</b>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <div class="row g-3">
-    <div class="col-12 col-md-3">
-      <div class="card">
-        <div class="card-body">
-          <div class="text-muted">Clients</div>
-          <div class="fs-3">{{ clients_count }}</div>
+    <div class="col-12 col-md-2">
+      <div class="surface-panel metric-card">
+          <div class="metric-label">Clients</div>
+          <div class="metric-value">{{ clients_count }}</div>
+          <div class="metric-hint">CRM and demo personas available for generation.</div>
         </div>
-      </div>
     </div>
-    <div class="col-12 col-md-3">
-      <div class="card">
-        <div class="card-body">
-          <div class="text-muted">Events</div>
-          <div class="fs-3">{{ events_count }}</div>
+    <div class="col-12 col-md-2">
+      <div class="surface-panel metric-card">
+          <div class="metric-label">Enriched</div>
+          <div class="metric-value">{{ enriched_clients_count }}</div>
+          <div class="metric-hint">Profiles with `ИНН`, `ОКВЭД`, CEO and source data.</div>
         </div>
-      </div>
     </div>
-    <div class="col-12 col-md-3">
-      <div class="card">
-        <div class="card-body">
-          <div class="text-muted">Greetings</div>
-          <div class="fs-3">{{ greetings_count }}</div>
+    <div class="col-12 col-md-2">
+      <div class="surface-panel metric-card">
+          <div class="metric-label">Events</div>
+          <div class="metric-value">{{ events_count }}</div>
+          <div class="metric-hint">Upcoming triggers detected for birthdays and holidays.</div>
         </div>
-      </div>
     </div>
-    <div class="col-12 col-md-3">
-      <div class="card">
-        <div class="card-body">
-          <div class="text-muted">Deliveries</div>
-          <div class="fs-3">{{ deliveries_count }}</div>
+    <div class="col-12 col-md-2">
+      <div class="surface-panel metric-card">
+          <div class="metric-label">Greetings</div>
+          <div class="metric-value">{{ greetings_count }}</div>
+          <div class="metric-hint">Generated texts and cards ready for review or send.</div>
         </div>
-      </div>
+    </div>
+    <div class="col-12 col-md-2">
+      <div class="surface-panel metric-card">
+          <div class="metric-label">Deliveries</div>
+          <div class="metric-value">{{ deliveries_count }}</div>
+          <div class="metric-hint">Outbox records and idempotent delivery history.</div>
+        </div>
+    </div>
+    <div class="col-12 col-md-2">
+      <div class="surface-panel metric-card">
+          <div class="metric-label">Feedback</div>
+          <div class="metric-value">{{ feedback_count }}</div>
+          <div class="metric-hint">Manager quality signals captured for future tuning.</div>
+        </div>
     </div>
   </div>
 
-  <div class="mt-4">
-    <div class="alert alert-info">
-      <div class="fw-semibold mb-1">Как быстро показать демо</div>
-      <ol class="mb-0">
-        <li>
-          Нажмите <b>Seed demo data</b> (слева) — он пересоздаст демо-набор из <b>5 случайных клиентов</b>
-          (дни рождения — <b>сегодня или в ближайшие дни</b>).
-        </li>
-        <li>Нажмите <b>Run agent now</b> (слева).</li>
-        <li>Откройте <b>Greetings</b> и <b>Deliveries</b> и покажите статусы.</li>
-        <li>Откройте папку <code class="small">backend\data\outbox\</code> и покажите файлы «отправки».</li>
-      </ol>
+  <div class="row g-4 mt-1">
+    <div class="col-12 col-xl-5">
+      <div class="surface-panel h-100">
+        <div class="section-title">How to present the demo</div>
+        <div class="section-subtitle mb-4">Короткий сценарий, который показывает реальный прогресс проекта.</div>
+        <div class="d-grid gap-3">
+          <div class="workflow-step">
+            <div class="workflow-index">1</div>
+            <div>
+              <div class="fw-semibold">Seed demo data</div>
+              <div class="section-subtitle">Создаёт 5 клиентов с актуальными событиями в ближайшем окне.</div>
+            </div>
+          </div>
+          <div class="workflow-step">
+            <div class="workflow-index">2</div>
+            <div>
+              <div class="fw-semibold">Enrich company profiles</div>
+              <div class="section-subtitle">Заполняет `ИНН`, `ОКВЭД`, руководителя и источник данных.</div>
+            </div>
+          </div>
+          <div class="workflow-step">
+            <div class="workflow-index">3</div>
+            <div>
+              <div class="fw-semibold">Run agent now</div>
+              <div class="section-subtitle">Генерирует поздравления и открытки на основе enriched-профилей.</div>
+            </div>
+          </div>
+          <div class="workflow-step">
+            <div class="workflow-index">4</div>
+            <div>
+              <div class="fw-semibold">Review and feedback</div>
+              <div class="section-subtitle">Сохраните feedback менеджера и покажите живой human-in-the-loop.</div>
+            </div>
+          </div>
+          <div class="workflow-step">
+            <div class="workflow-index">5</div>
+            <div>
+              <div class="fw-semibold">Deliveries and artifacts</div>
+              <div class="section-subtitle">Продемонстрируйте outbox и generated cards как итог конвейера.</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
-
-  <div class="mt-4">
-    <div class="d-flex align-items-center justify-content-between mb-2">
-      <div class="fw-semibold">Последние запуски агента</div>
-      <a href="/runs" class="small">Все запуски</a>
-    </div>
-    <div class="card">
-      <div class="card-body table-responsive">
-        <table class="table table-sm align-middle mb-0">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Status</th>
-              <th>Triggered by</th>
-              <th>Started</th>
-              <th>Finished</th>
-              <th>Events</th>
-              <th>Greetings</th>
-              <th>Sent (auto)</th>
-              <th>Errors</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for r in last_runs %}
+    <div class="col-12 col-xl-7">
+      <div class="surface-card h-100">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <span>Latest agent runs</span>
+          <a href="/runs" class="small">Все запуски</a>
+        </div>
+        <div class="card-body table-responsive">
+          <table class="table table-sm align-middle mb-0 table-clean">
+            <thead>
               <tr>
-                <td>{{ r.id }}</td>
-                <td>
-                  {% if r.status == "success" %}
-                    <span class="badge text-bg-success">success</span>
-                  {% elif r.status == "partial" %}
-                    <span class="badge text-bg-warning">partial</span>
-                  {% elif r.status == "error" %}
-                    <span class="badge text-bg-danger">error</span>
-                  {% else %}
-                    <span class="badge text-bg-secondary">{{ r.status }}</span>
-                  {% endif %}
-                </td>
-                <td class="small">{{ r.triggered_by }}</td>
-                <td class="small">{{ r.started_at }}</td>
-                <td class="small">{{ r.finished_at or "" }}</td>
-                <td>{{ r.scanned_events }}</td>
-                <td>{{ r.generated_greetings }}</td>
-                <td>{{ r.sent_deliveries }}</td>
-                <td>{{ r.errors }}</td>
+                <th>ID</th>
+                <th>Status</th>
+                <th>Triggered by</th>
+                <th>Started</th>
+                <th>Finished</th>
+                <th>Events</th>
+                <th>Greetings</th>
+                <th>Sent</th>
+                <th>Errors</th>
               </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {% for r in last_runs %}
+                <tr>
+                  <td class="fw-semibold">#{{ r.id }}</td>
+                  <td>
+                    {% if r.status == "success" %}
+                      <span class="badge text-bg-success">success</span>
+                    {% elif r.status == "partial" %}
+                      <span class="badge text-bg-warning">partial</span>
+                    {% elif r.status == "error" %}
+                      <span class="badge text-bg-danger">error</span>
+                    {% else %}
+                      <span class="badge text-bg-secondary">{{ r.status }}</span>
+                    {% endif %}
+                  </td>
+                  <td class="small">{{ r.triggered_by }}</td>
+                  <td class="small">{{ r.started_at }}</td>
+                  <td class="small">{{ r.finished_at or "" }}</td>
+                  <td>{{ r.scanned_events }}</td>
+                  <td>{{ r.generated_greetings }}</td>
+                  <td>{{ r.sent_deliveries }}</td>
+                  <td>{{ r.errors }}</td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="9" class="empty-state">Запусков пока нет. Используйте `Run agent now`, чтобы заполнить журнал.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>

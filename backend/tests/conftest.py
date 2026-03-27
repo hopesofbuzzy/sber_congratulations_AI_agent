@@ -1,7 +1,14 @@
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+if str(BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(BACKEND_DIR))
 
 from app.core.config import settings
 from app.db.init_db import create_dirs, init_db

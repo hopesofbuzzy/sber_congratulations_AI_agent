@@ -5,8 +5,8 @@
 
 ## TL;DR (что это за проект)
 
-MVP: конвейер поздравлений (события → генерация текста/открытки → отправка/log) с web UI + API.  
-Поддерживает офлайн‑режим и интеграцию с **GigaChat** (текст + открытки).
+MVP+: конвейер поздравлений (события → enrichment профиля организации → генерация текста/открытки → отправка/log) с web UI + API.  
+Поддерживает офлайн‑режим и интеграцию с **GigaChat** (текст + открытки), а также локальный demo-registry для enrichment компаний и feedback-loop менеджеров.
 
 ## Безопасность общения (обязательные правила)
 
@@ -36,6 +36,7 @@ scripts\run_backend.cmd
 
 3) Демо:
 - **Seed demo data**
+- **Enrich company profiles**
 - **Run agent now**
 - страницы: Clients / Events / Greetings / Deliveries
 - артефакты: `backend\data\outbox\`, `backend\data\cards\`
@@ -76,9 +77,11 @@ scripts\run_gigachat_smoke.cmd
   - клиент: `backend/app/agent/gigachat_client.py`
   - провайдеры: `backend/app/agent/gigachat_providers.py`
 - **Детектор событий**: `backend/app/services/event_detector.py`
+- **Enrichment организаций**: `backend/app/services/company_enrichment.py` + `backend/app/resources/company_registry_demo.json`
 - **Reset runtime data (для демо)**: `backend/app/services/reset_runtime.py` + кнопка в UI
 - **Отправка (MVP outbox)**: `backend/app/services/sender.py`
 - **Guardrails**: `backend/app/services/guardrails.py`
+- **Feedback loop**: `backend/app/services/feedback.py` + `backend/app/api/routes/feedback.py`
 - **Планировщик**: `backend/app/worker/run_scheduler.py`
 - **Аудит запусков (AgentRun)**: `backend/app/db/models.py` (AgentRun), запись в `backend/app/agent/orchestrator.py`, UI: `/runs`
 
@@ -86,10 +89,11 @@ scripts\run_gigachat_smoke.cmd
 
 См. `docs/DECISIONS.md`.
 
-## Следующие крупные задачи (после MVP)
+## Следующие крупные задачи (после текущего MVP+)
 
 - **VIP approval flow**: уже реализован базовый вариант: `vip` → `needs_approval`, подтверждение в UI → отправка.
-- **Статистика/аудит**: AgentRun, метрики по периодам, ошибки, повторная отправка.
+- **Статистика/аудит**: AgentRun + feedback уже есть, дальше нужны агрегированные метрики по периодам, причины ошибок, повторная отправка, экспорт.
+- **Реальный enrichment**: заменить demo-registry на интеграции/ETL по ИНН (ОКВЭД/руководитель/источник).
 - **Реальные каналы отправки**: SMTP/SMS/мессенджеры.
 
 ## Copy‑paste для нового чата (Cursor)

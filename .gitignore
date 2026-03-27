@@ -32,6 +32,7 @@ Desktop.ini
 # Project runtime data
 backend/.env
 backend/data/
+ROADMAP_INTERNAL.md
 
 # Certificates (optional local files)
 *.crt

@@ -1,20 +1,51 @@
 {% extends "base.html" %}
 {% block content %}
   <div class="d-flex align-items-center justify-content-between mb-3">
-    <div>
+    <div class="page-intro">
       <h2 class="mb-1">Agent runs</h2>
-      <div class="text-muted">Аудит и статистика запусков агента</div>
+      <div class="text-muted">Аудит запусков, наблюдаемость конвейера и источник данных для презентации результатов.</div>
     </div>
   </div>
 
-  <div class="card">
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-md-3">
+      <div class="surface-panel metric-card">
+        <div class="metric-label">Runs total</div>
+        <div class="metric-value">{{ runs | length }}</div>
+        <div class="metric-hint">Запуски, записанные в AgentRun.</div>
+      </div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="surface-panel metric-card">
+        <div class="metric-label">Success</div>
+        <div class="metric-value">{{ runs | selectattr('status', 'equalto', 'success') | list | length }}</div>
+        <div class="metric-hint">Полностью успешные прогоны без ошибок.</div>
+      </div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="surface-panel metric-card">
+        <div class="metric-label">Partial</div>
+        <div class="metric-value">{{ runs | selectattr('status', 'equalto', 'partial') | list | length }}</div>
+        <div class="metric-hint">Прогоны с результатом и частичными ошибками.</div>
+      </div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="surface-panel metric-card">
+        <div class="metric-label">Errors</div>
+        <div class="metric-value">{{ runs | selectattr('status', 'equalto', 'error') | list | length }}</div>
+        <div class="metric-hint">Фатальные прогоны, требующие внимания.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="surface-card">
     <div class="card-header">Последние 100 запусков</div>
     <div class="card-body table-responsive">
-      <div class="small text-muted mb-2">
+      <div class="soft-note small text-muted mb-3">
         <b>Sent (auto)</b> — отправки, выполненные автоматически внутри агента. Отправки VIP после ручного
         <b>Approve &amp; send</b> отображаются в Deliveries, но не увеличивают этот счётчик.
       </div>
-      <table class="table table-sm align-middle">
+      <table class="table table-sm align-middle table-clean">
         <thead>
           <tr>
             <th>ID</th>
@@ -35,7 +66,7 @@
         <tbody>
           {% for r in runs %}
             <tr>
-              <td>{{ r.id }}</td>
+              <td class="fw-semibold">#{{ r.id }}</td>
               <td>
                 {% if r.status == "success" %}
                   <span class="badge text-bg-success">success</span>
@@ -58,6 +89,10 @@
               <td>{{ r.sent_deliveries }}</td>
               <td>{{ r.skipped_existing }}</td>
               <td>{{ r.errors }}</td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="13" class="empty-state">История запусков пока пустая. Выполните `Run agent now`, чтобы наполнить журнал.</td>
             </tr>
           {% endfor %}
         </tbody>

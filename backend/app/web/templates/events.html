@@ -1,16 +1,40 @@
 {% extends "base.html" %}
 {% block content %}
   <div class="d-flex align-items-center justify-content-between mb-3">
-    <div>
+    <div class="page-intro">
       <h2 class="mb-1">Events</h2>
-      <div class="text-muted">Поводы для поздравлений (авто + ручные)</div>
+      <div class="text-muted">Поводы для поздравлений: дни рождения, праздники и будущие ручные сценарии.</div>
     </div>
   </div>
 
-  <div class="card">
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-md-4">
+      <div class="surface-panel metric-card">
+        <div class="metric-label">Total events</div>
+        <div class="metric-value">{{ events | length }}</div>
+        <div class="metric-hint">Все события, находящиеся в рабочем окне.</div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="surface-panel metric-card">
+        <div class="metric-label">Birthdays</div>
+        <div class="metric-value">{{ events | selectattr('event_type', 'equalto', 'birthday') | list | length }}</div>
+        <div class="metric-hint">Персональные поводы на базе CRM-профилей.</div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="surface-panel metric-card">
+        <div class="metric-label">Holidays</div>
+        <div class="metric-value">{{ events | selectattr('event_type', 'equalto', 'holiday') | list | length }}</div>
+        <div class="metric-hint">Календарные и профессиональные праздники.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="surface-card">
     <div class="card-header">Список событий</div>
     <div class="card-body table-responsive">
-      <table class="table table-sm align-middle">
+      <table class="table table-sm align-middle table-clean">
         <thead>
           <tr>
             <th>ID</th>
@@ -23,11 +47,15 @@
         <tbody>
           {% for e in events %}
             <tr>
-              <td>{{ e.id }}</td>
-              <td>{{ e.client_id }}</td>
+              <td class="fw-semibold">#{{ e.id }}</td>
+              <td>{{ e.client_id or "—" }}</td>
               <td><span class="badge text-bg-light">{{ e.event_type }}</span></td>
               <td>{{ e.event_date }}</td>
               <td>{{ e.title }}</td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="5" class="empty-state">Событий пока нет. После seed и запуска агента окно событий заполнится автоматически.</td>
             </tr>
           {% endfor %}
         </tbody>

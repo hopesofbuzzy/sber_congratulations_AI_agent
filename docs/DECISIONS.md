@@ -93,4 +93,17 @@
 - **Причина**: генерация картинок самая медленная и “дорогая” по токенам/времени, особенно при нескольких событиях.
 - **Файлы**: `backend/app/core/config.py`, `backend/app/agent/orchestrator.py`, `backend/env.example`.
 
+## 14) Company enrichment через локальный demo-registry
+
+- **Решение**: организационный профиль клиента расширен полями `inn`, `official_company_name`, `ceo_name`, `okved_code`, `okved_name`, `company_site`, `source_url`, `enrichment_status`, `enrichment_error`, `enriched_at`.
+  Для демо enrichment выполняется через локальный реестр `company_registry_demo.json` с отдельным сервисом-адаптером.
+- **Причина**: нужен реально работающий enrichment-контур уже сейчас, но без зависимости от внешних API/ключей/нестабильных публичных источников.
+- **Файлы**: `backend/app/services/company_enrichment.py`, `backend/app/resources/company_registry_demo.json`, `backend/app/db/models.py`, `backend/app/web/templates/clients.html`.
+
+## 15) Feedback loop для Human-in-the-Loop
+
+- **Решение**: менеджер может сохранить `score/outcome/notes` для каждого поздравления; feedback хранится в таблице `Feedback`, доступен через UI и API.
+- **Причина**: без операторской оценки невозможно показать “улучшение качества” и невозможно собирать сигналы для будущего ранжирования/обучения.
+- **Файлы**: `backend/app/services/feedback.py`, `backend/app/api/routes/feedback.py`, `backend/app/web/router.py`, `backend/app/web/templates/greetings.html`.
+
 

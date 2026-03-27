@@ -59,6 +59,28 @@ async def _migrate_sqlite(conn) -> None:
             alter_stmts.append("ALTER TABLE clients ADD COLUMN middle_name VARCHAR(100)")
         if "profession" not in existing:
             alter_stmts.append("ALTER TABLE clients ADD COLUMN profession VARCHAR(80)")
+        if "official_company_name" not in existing:
+            alter_stmts.append("ALTER TABLE clients ADD COLUMN official_company_name VARCHAR(255)")
+        if "inn" not in existing:
+            alter_stmts.append("ALTER TABLE clients ADD COLUMN inn VARCHAR(12)")
+        if "ceo_name" not in existing:
+            alter_stmts.append("ALTER TABLE clients ADD COLUMN ceo_name VARCHAR(200)")
+        if "okved_code" not in existing:
+            alter_stmts.append("ALTER TABLE clients ADD COLUMN okved_code VARCHAR(32)")
+        if "okved_name" not in existing:
+            alter_stmts.append("ALTER TABLE clients ADD COLUMN okved_name VARCHAR(255)")
+        if "company_site" not in existing:
+            alter_stmts.append("ALTER TABLE clients ADD COLUMN company_site VARCHAR(255)")
+        if "source_url" not in existing:
+            alter_stmts.append("ALTER TABLE clients ADD COLUMN source_url VARCHAR(500)")
+        if "enrichment_status" not in existing:
+            alter_stmts.append(
+                "ALTER TABLE clients ADD COLUMN enrichment_status VARCHAR(50) DEFAULT 'not_requested'"
+            )
+        if "enrichment_error" not in existing:
+            alter_stmts.append("ALTER TABLE clients ADD COLUMN enrichment_error TEXT")
+        if "enriched_at" not in existing:
+            alter_stmts.append("ALTER TABLE clients ADD COLUMN enriched_at DATETIME")
         for stmt in alter_stmts:
             await conn.exec_driver_sql(stmt)
     except Exception:

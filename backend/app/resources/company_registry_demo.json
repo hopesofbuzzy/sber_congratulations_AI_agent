@@ -1,0 +1,152 @@
+[
+  {
+    "inn": "7701122334",
+    "aliases": ["ООО Безопасность+", "Безопасность+"],
+    "official_company_name": "ООО \"Безопасность Плюс\"",
+    "ceo_name": "Морозова Наталья Олеговна",
+    "okved_code": "80.10",
+    "okved_name": "Деятельность частных охранных служб",
+    "company_site": "https://bezopasnost-plus.example",
+    "source_url": "https://registry-demo.local/companies/7701122334"
+  },
+  {
+    "inn": "7802456789",
+    "aliases": ["ООО Логистика-Профи", "Логистика-Профи"],
+    "official_company_name": "ООО \"Логистика-Профи\"",
+    "ceo_name": "Громова Алина Сергеевна",
+    "okved_code": "52.29",
+    "okved_name": "Деятельность вспомогательная прочая, связанная с перевозками",
+    "company_site": "https://logistika-profi.example",
+    "source_url": "https://registry-demo.local/companies/7802456789"
+  },
+  {
+    "inn": "7723456781",
+    "aliases": ["АО ПромИнжиниринг", "ПромИнжиниринг"],
+    "official_company_name": "АО \"ПромИнжиниринг\"",
+    "ceo_name": "Мельников Руслан Андреевич",
+    "okved_code": "62.01",
+    "okved_name": "Разработка компьютерного программного обеспечения",
+    "company_site": "https://promengineering.example",
+    "source_url": "https://registry-demo.local/companies/7723456781"
+  },
+  {
+    "inn": "7712450099",
+    "aliases": ["ООО Ритейл-Плюс", "Ритейл-Плюс"],
+    "official_company_name": "ООО \"Ритейл-Плюс\"",
+    "ceo_name": "Воронова Ксения Павловна",
+    "okved_code": "46.90",
+    "okved_name": "Торговля оптовая неспециализированная",
+    "company_site": "https://retail-plus.example",
+    "source_url": "https://registry-demo.local/companies/7712450099"
+  },
+  {
+    "inn": "7812001122",
+    "aliases": ["ЗАО ТехСтрой", "ТехСтрой"],
+    "official_company_name": "ЗАО \"ТехСтрой\"",
+    "ceo_name": "Сафронов Павел Игоревич",
+    "okved_code": "41.20",
+    "okved_name": "Строительство жилых и нежилых зданий",
+    "company_site": "https://tehstroy.example",
+    "source_url": "https://registry-demo.local/companies/7812001122"
+  },
+  {
+    "inn": "7701987654",
+    "aliases": ["ИП Кузнецова М.А.", "Кузнецова М.А."],
+    "official_company_name": "ИП Кузнецова Мария Алексеевна",
+    "ceo_name": "Кузнецова Мария Алексеевна",
+    "okved_code": "70.22",
+    "okved_name": "Консультирование по вопросам коммерческой деятельности и управления",
+    "company_site": "https://kuznetsova-consult.example",
+    "source_url": "https://registry-demo.local/companies/7701987654"
+  },
+  {
+    "inn": "7733557799",
+    "aliases": ["АО МедТех", "МедТех"],
+    "official_company_name": "АО \"МедТех\"",
+    "ceo_name": "Николаева Екатерина Олеговна",
+    "okved_code": "32.50",
+    "okved_name": "Производство медицинских инструментов и оборудования",
+    "company_site": "https://medtech.example",
+    "source_url": "https://registry-demo.local/companies/7733557799"
+  },
+  {
+    "inn": "7722884400",
+    "aliases": ["ООО АгроПром", "АгроПром"],
+    "official_company_name": "ООО \"АгроПром\"",
+    "ceo_name": "Орлов Дмитрий Викторович",
+    "okved_code": "46.21",
+    "okved_name": "Торговля оптовая зерном, семенами и кормами для животных",
+    "company_site": "https://agroprom.example",
+    "source_url": "https://registry-demo.local/companies/7722884400"
+  },
+  {
+    "inn": "7811882201",
+    "aliases": ["ООО Альфа-Логистика", "Альфа-Логистика"],
+    "official_company_name": "ООО \"Альфа-Логистика\"",
+    "ceo_name": "Соколова Ирина Владимировна",
+    "okved_code": "49.41",
+    "okved_name": "Деятельность автомобильного грузового транспорта",
+    "company_site": "https://alpha-logistics.example",
+    "source_url": "https://registry-demo.local/companies/7811882201"
+  },
+  {
+    "inn": "7701228899",
+    "aliases": ["ООО СеверЭнерго", "СеверЭнерго"],
+    "official_company_name": "ООО \"СеверЭнерго\"",
+    "ceo_name": "Волков Сергей Николаевич",
+    "okved_code": "35.11",
+    "okved_name": "Производство электроэнергии",
+    "company_site": "https://severenergo.example",
+    "source_url": "https://registry-demo.local/companies/7701228899"
+  },
+  {
+    "inn": "7801223300",
+    "aliases": ["ООО ДевСтудио", "ДевСтудио"],
+    "official_company_name": "ООО \"ДевСтудио\"",
+    "ceo_name": "Смирнов Никита Сергеевич",
+    "okved_code": "62.01",
+    "okved_name": "Разработка компьютерного программного обеспечения",
+    "company_site": "https://devstudio.example",
+    "source_url": "https://registry-demo.local/companies/7801223300"
+  },
+  {
+    "inn": "7813445500",
+    "aliases": ["АО ТрансЛайн", "ТрансЛайн"],
+    "official_company_name": "АО \"ТрансЛайн\"",
+    "ceo_name": "Фёдорова Ольга Ивановна",
+    "okved_code": "52.10",
+    "okved_name": "Деятельность по складированию и хранению",
+    "company_site": "https://transline.example",
+    "source_url": "https://registry-demo.local/companies/7813445500"
+  },
+  {
+    "inn": "7701664400",
+    "aliases": ["ООО ФинСервис", "ФинСервис"],
+    "official_company_name": "ООО \"ФинСервис\"",
+    "ceo_name": "Захаров Илья Денисович",
+    "okved_code": "69.20",
+    "okved_name": "Деятельность по оказанию услуг в области бухгалтерского учета",
+    "company_site": "https://finservice.example",
+    "source_url": "https://registry-demo.local/companies/7701664400"
+  },
+  {
+    "inn": "7712334401",
+    "aliases": ["ООО ТурбоМаркет", "ТурбоМаркет"],
+    "official_company_name": "ООО \"ТурбоМаркет\"",
+    "ceo_name": "Сергеева Людмила Петровна",
+    "okved_code": "73.11",
+    "okved_name": "Деятельность рекламных агентств",
+    "company_site": "https://turbomarket.example",
+    "source_url": "https://registry-demo.local/companies/7712334401"
+  },
+  {
+    "inn": "7714556677",
+    "aliases": ["ООО СтройПроект", "СтройПроект"],
+    "official_company_name": "ООО \"СтройПроект\"",
+    "ceo_name": "Поляков Артём Евгеньевич",
+    "okved_code": "71.12",
+    "okved_name": "Деятельность в области инженерных изысканий и проектирования",
+    "company_site": "https://stroyproekt.example",
+    "source_url": "https://registry-demo.local/companies/7714556677"
+  }
+]

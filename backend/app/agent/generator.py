@@ -20,9 +20,15 @@ def _allowed_facts(client: Client) -> dict:
         "middle_name": (getattr(client, "middle_name", None) or ""),
         "last_name": client.last_name,
         "company_name": client.company_name,
+        "official_company_name": getattr(client, "official_company_name", None),
         "position": client.position,
         "profession": (getattr(client, "profession", None) or ""),
         "segment": client.segment,
+        "inn": getattr(client, "inn", None),
+        "ceo_name": getattr(client, "ceo_name", None),
+        "okved_code": getattr(client, "okved_code", None),
+        "okved_name": getattr(client, "okved_name", None),
+        "company_site": getattr(client, "company_site", None),
         # We intentionally do not pass last_interaction_summary to the model to avoid leaking topics/details.
         # Note: we deliberately do not pass email/phone to the LLM.
     }

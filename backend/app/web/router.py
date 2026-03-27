@@ -13,9 +13,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.agent.orchestrator import run_once
-from app.db.models import AgentRun, Client, Delivery, Event, Greeting
+from app.db.models import AgentRun, Client, Delivery, Event, Feedback, Greeting
 from app.db.session import get_session
 from app.services.approval import approve_greeting, reject_greeting
+from app.services.company_enrichment import enrich_client_company_by_id, enrich_missing_clients
+from app.services.feedback import save_feedback
 from app.services.reset_runtime import reset_runtime_data
 
 router = APIRouter()
@@ -27,9 +29,13 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 @router.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request, session: AsyncSession = Depends(get_session)):
     clients_count = (await session.execute(select(func.count(Client.id)))).scalar_one()
+    enriched_clients_count = (
+        await session.execute(select(func.count(Client.id)).where(Client.enrichment_status == "enriched"))
+    ).scalar_one()
     events_count = (await session.execute(select(func.count(Event.id)))).scalar_one()
     greetings_count = (await session.execute(select(func.count(Greeting.id)))).scalar_one()
     deliveries_count = (await session.execute(select(func.count(Delivery.id)))).scalar_one()
+    feedback_count = (await session.execute(select(func.count(Feedback.id)))).scalar_one()
     last_runs = (
         (await session.execute(select(AgentRun).order_by(AgentRun.id.desc()).limit(10)))
         .scalars()
@@ -37,13 +43,15 @@ async def dashboard(request: Request, session: AsyncSession = Depends(get_sessio
     )
 
     return templates.TemplateResponse(
+        request,
         "dashboard.html",
         {
-            "request": request,
             "clients_count": clients_count,
+            "enriched_clients_count": enriched_clients_count,
             "events_count": events_count,
             "greetings_count": greetings_count,
             "deliveries_count": deliveries_count,
+            "feedback_count": feedback_count,
             "last_runs": last_runs,
         },
     )
@@ -70,14 +78,34 @@ async def action_reset_runtime(session: AsyncSession = Depends(get_session)):
     return RedirectResponse(url="/", status_code=303)
 
 
+@router.post("/actions/enrich-clients")
+async def action_enrich_clients(session: AsyncSession = Depends(get_session)):
+    result = await enrich_missing_clients(session)
+    msg = (
+        f"Обогащение завершено: enriched={result['enriched']}, "
+        f"errors={result['errors']}, processed={result['processed']}"
+    )
+    return RedirectResponse(url=f"/clients?msg={quote(msg)}", status_code=303)
+
+
+@router.post("/actions/clients/{client_id}/enrich")
+async def action_enrich_client(client_id: int, session: AsyncSession = Depends(get_session)):
+    result = await enrich_client_company_by_id(session, client_id=client_id)
+    if result["status"] == "enriched":
+        msg = f"Профиль клиента #{client_id} успешно обогащён."
+        return RedirectResponse(url=f"/clients?msg={quote(msg)}", status_code=303)
+    error = result.get("reason", "Не удалось обогатить профиль клиента.")
+    return RedirectResponse(url=f"/clients?error={quote(error)}", status_code=303)
+
+
 @router.get("/clients", response_class=HTMLResponse)
 async def clients_page(request: Request, session: AsyncSession = Depends(get_session)):
     clients = (await session.execute(select(Client).order_by(Client.id.desc()))).scalars().all()
     qp = request.query_params
     return templates.TemplateResponse(
+        request,
         "clients.html",
         {
-            "request": request,
             "clients": clients,
             "msg": qp.get("msg", ""),
             "error": qp.get("error", ""),
@@ -119,12 +147,22 @@ def _validate_email(value: str) -> str:
     return v
 
 
+def _normalize_inn(value: str) -> str | None:
+    digits = re.sub(r"\D", "", value or "")
+    if not digits:
+        return None
+    if len(digits) not in {10, 12}:
+        raise ValueError("inn: ИНН должен содержать 10 или 12 цифр")
+    return digits
+
+
 @router.post("/clients")
 async def clients_create(
     first_name: str = Form(...),
     middle_name: str = Form(...),
     last_name: str = Form(...),
     company_name: str = Form(""),
+    inn: str = Form(""),
     position: str = Form(""),
     profession: str = Form(...),
     segment: str = Form("standard"),
@@ -148,6 +186,7 @@ async def clients_create(
         bd = None
         if birth_date.strip():
             bd = dt.date.fromisoformat(birth_date.strip())
+        norm_inn = _normalize_inn(inn)
 
         pref = (preferred_channel or "email").strip().lower()
         if pref not in {"email", "sms", "messenger"}:
@@ -181,6 +220,8 @@ async def clients_create(
             middle_name=mn,
             last_name=ln,
             company_name=company_name.strip() or None,
+            official_company_name=None,
+            inn=norm_inn,
             position=position.strip() or None,
             profession=prof,
             segment=seg,
@@ -189,6 +230,7 @@ async def clients_create(
             preferred_channel=pref,
             birth_date=bd,
             preferences={},
+            enrichment_status="pending" if norm_inn else "not_requested",
             is_demo=False,
         )
         session.add(c)
@@ -204,16 +246,21 @@ async def clients_create(
 @router.get("/events", response_class=HTMLResponse)
 async def events_page(request: Request, session: AsyncSession = Depends(get_session)):
     events = (await session.execute(select(Event).order_by(Event.event_date.asc()))).scalars().all()
-    return templates.TemplateResponse("events.html", {"request": request, "events": events})
+    return templates.TemplateResponse(request, "events.html", {"events": events})
 
 
 @router.get("/greetings", response_class=HTMLResponse)
 async def greetings_page(request: Request, session: AsyncSession = Depends(get_session)):
+    qp = request.query_params
     greetings = (
         (
             await session.execute(
                 select(Greeting)
-                .options(selectinload(Greeting.event), selectinload(Greeting.client))
+                .options(
+                    selectinload(Greeting.event),
+                    selectinload(Greeting.client),
+                    selectinload(Greeting.feedback_entries),
+                )
                 .order_by(Greeting.id.desc())
             )
         )
@@ -221,8 +268,34 @@ async def greetings_page(request: Request, session: AsyncSession = Depends(get_s
         .all()
     )
     return templates.TemplateResponse(
-        "greetings.html", {"request": request, "greetings": greetings}
+        request,
+        "greetings.html",
+        {"greetings": greetings, "msg": qp.get("msg", ""), "error": qp.get("error", "")},
     )
+
+
+@router.post("/actions/greetings/{greeting_id}/feedback")
+async def action_feedback_greeting(
+    greeting_id: int,
+    score: int | None = Form(None),
+    outcome: str = Form("unknown"),
+    notes: str = Form(""),
+    session: AsyncSession = Depends(get_session),
+):
+    try:
+        await save_feedback(
+            session,
+            greeting_id=greeting_id,
+            score=score,
+            outcome=outcome,
+            notes=notes,
+        )
+        return RedirectResponse(
+            url=f"/greetings?msg={quote('Feedback сохранен')}",
+            status_code=303,
+        )
+    except Exception as e:
+        return RedirectResponse(url=f"/greetings?error={quote(str(e))}", status_code=303)
 
 
 @router.post("/actions/greetings/{greeting_id}/approve")
@@ -256,9 +329,7 @@ async def deliveries_page(request: Request, session: AsyncSession = Depends(get_
         .scalars()
         .all()
     )
-    return templates.TemplateResponse(
-        "deliveries.html", {"request": request, "deliveries": deliveries}
-    )
+    return templates.TemplateResponse(request, "deliveries.html", {"deliveries": deliveries})
 
 
 @router.get("/runs", response_class=HTMLResponse)
@@ -268,4 +339,4 @@ async def runs_page(request: Request, session: AsyncSession = Depends(get_sessio
         .scalars()
         .all()
     )
-    return templates.TemplateResponse("runs.html", {"request": request, "runs": runs})
+    return templates.TemplateResponse(request, "runs.html", {"runs": runs})
