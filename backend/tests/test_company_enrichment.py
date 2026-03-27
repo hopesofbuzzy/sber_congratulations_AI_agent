@@ -30,7 +30,9 @@ async def test_enrich_client_by_inn(db_session):
     result = await enrich_client_company_by_id(db_session, client_id=client.id)
     assert result["status"] == "enriched"
 
-    refreshed = (await db_session.execute(select(Client).where(Client.id == client.id))).scalar_one()
+    refreshed = (
+        await db_session.execute(select(Client).where(Client.id == client.id))
+    ).scalar_one()
     assert refreshed.official_company_name == 'ООО "Безопасность Плюс"'
     assert refreshed.okved_code == "80.10"
     assert refreshed.okved_name

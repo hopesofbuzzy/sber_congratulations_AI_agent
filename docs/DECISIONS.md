@@ -95,15 +95,27 @@
 
 ## 14) Company enrichment через локальный demo-registry
 
-- **Решение**: организационный профиль клиента расширен полями `inn`, `official_company_name`, `ceo_name`, `okved_code`, `okved_name`, `company_site`, `source_url`, `enrichment_status`, `enrichment_error`, `enriched_at`.
-  Для демо enrichment выполняется через локальный реестр `company_registry_demo.json` с отдельным сервисом-адаптером.
-- **Причина**: нужен реально работающий enrichment-контур уже сейчас, но без зависимости от внешних API/ключей/нестабильных публичных источников.
-- **Файлы**: `backend/app/services/company_enrichment.py`, `backend/app/resources/company_registry_demo.json`, `backend/app/db/models.py`, `backend/app/web/templates/clients.html`.
+- **Решение**: организационный профиль клиента расширен полями `inn`, `ogrn`, `kpp`, `official_company_name`, `ceo_name`, `okved_code`, `okved_name`, `company_status`, `company_address`, `company_site`, `source_url`, `enrichment_status`, `enrichment_error`, `enriched_at`.
+  Enrichment работает через провайдерный слой: `demo`, `dadata` или `hybrid`, а локальные данные вынесены в `backend/app/resources/company_data/`.
+- **Причина**: нужен реально работающий enrichment-контур уже сейчас, но с понятным путём к реальному внешнему источнику по ИНН без переписывания UI/API.
+- **Файлы**: `backend/app/services/company_enrichment.py`, `backend/app/services/dadata_client.py`, `backend/app/resources/company_data/*`, `backend/app/db/models.py`, `backend/app/web/templates/clients.html`.
 
-## 15) Feedback loop для Human-in-the-Loop
+## 15) Импорт условной базы компаний из CSV
+
+- **Решение**: CSV-справочник компаний хранится внутри `backend/app/resources/company_data/`, импортируется через отдельный сервис и upsert-логикой по `ИНН`.
+- **Причина**: корень репозитория не должен играть роль “склада данных”; импорт должен быть повторяемым, понятным и управляемым через UI/API.
+- **Файлы**: `backend/app/services/company_import.py`, `backend/app/resources/company_data/export-base_demo_takbup.csv`, `backend/app/web/router.py`, `backend/app/api/routes/clients.py`.
+
+## 16) Feedback loop для Human-in-the-Loop
 
 - **Решение**: менеджер может сохранить `score/outcome/notes` для каждого поздравления; feedback хранится в таблице `Feedback`, доступен через UI и API.
 - **Причина**: без операторской оценки невозможно показать “улучшение качества” и невозможно собирать сигналы для будущего ранжирования/обучения.
 - **Файлы**: `backend/app/services/feedback.py`, `backend/app/api/routes/feedback.py`, `backend/app/web/router.py`, `backend/app/web/templates/greetings.html`.
+
+## 17) Управляемый режим отправки через `.env`
+
+- **Решение**: время отправки вынесено в `DELIVERY_SCHEDULE_MODE` с режимами `event_date` и `immediate`; логика учитывается и при обычной отправке, и при VIP approve.
+- **Причина**: демо-сценарий и реальный сценарий доставки требуют разного поведения, и это должно включаться конфигом, а не “временными if-ами”.
+- **Файлы**: `backend/app/core/config.py`, `backend/app/services/due_sender.py`, `backend/app/services/approval.py`, `backend/env.example`.
 
 

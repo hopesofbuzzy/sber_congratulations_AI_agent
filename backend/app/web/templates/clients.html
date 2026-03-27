@@ -2,15 +2,25 @@
 {% block content %}
   <div class="d-flex align-items-center justify-content-between mb-3">
     <div class="page-intro">
-      <h2 class="mb-1">Clients</h2>
+      <h2 class="mb-1">Клиенты</h2>
       <div class="text-muted">
         CRM-слой для персонализации и enrichment. Для демо поддерживаем <b>ровно 5</b> клиентов.
-        Seed demo data пересоздаёт 5 демо-клиентов; при ручном добавлении демо-клиенты автоматически вытесняются.
+        Кнопка загрузки демо-данных пересоздаёт 5 демо-клиентов; при ручном добавлении демо-клиенты автоматически вытесняются.
       </div>
     </div>
-    <form method="post" action="/actions/enrich-clients">
-      <button class="btn btn-success quick-action">Enrich company profiles</button>
-    </form>
+    <div class="d-flex gap-2">
+      <form method="post" action="/actions/import-company-base">
+        <button class="btn btn-outline-primary quick-action">Импортировать базу компаний</button>
+      </form>
+      <form method="post" action="/actions/enrich-clients">
+        <button class="btn btn-success quick-action">Обогатить профили компаний</button>
+      </form>
+      {% if company_enrichment_provider != "demo" %}
+        <form method="post" action="/actions/refresh-clients-external">
+          <button class="btn btn-outline-success quick-action">Актуализировать через внешний источник</button>
+        </form>
+      {% endif %}
+    </div>
   </div>
 
   {% if msg %}
@@ -39,17 +49,17 @@
         <div class="col-12 col-md-3">
           <select class="form-select" name="profession" required>
             <option value="" selected disabled>Профессия (для проф. праздников)</option>
-            <option value="management">management</option>
-            <option value="finance">finance</option>
-            <option value="accounting">accounting</option>
-            <option value="it">it</option>
-            <option value="hr">hr</option>
-            <option value="marketing">marketing</option>
-            <option value="sales">sales</option>
-            <option value="logistics">logistics</option>
-            <option value="construction">construction</option>
-            <option value="medicine">medicine</option>
-            <option value="security">security</option>
+            <option value="management">управление</option>
+            <option value="finance">финансы</option>
+            <option value="accounting">бухгалтерия</option>
+            <option value="it">IT</option>
+            <option value="hr">HR</option>
+            <option value="marketing">маркетинг</option>
+            <option value="sales">продажи</option>
+            <option value="logistics">логистика</option>
+            <option value="construction">строительство</option>
+            <option value="medicine">медицина</option>
+            <option value="security">безопасность</option>
           </select>
           <div class="form-text">Используется для профессиональных праздников (например «День бухгалтера»).</div>
         </div>
@@ -66,10 +76,10 @@
 
         <div class="col-12 col-md-2">
           <select class="form-select" name="segment">
-            <option value="standard">standard</option>
-            <option value="vip">vip</option>
-            <option value="loyal">loyal</option>
-            <option value="new">new</option>
+            <option value="standard">стандарт</option>
+            <option value="vip">VIP</option>
+            <option value="loyal">лояльный</option>
+            <option value="new">новый</option>
           </select>
         </div>
         <div class="col-12 col-md-3">
@@ -83,7 +93,7 @@
           <select class="form-select" name="preferred_channel">
             <option value="email">email</option>
             <option value="sms">sms</option>
-            <option value="messenger">messenger</option>
+            <option value="messenger">мессенджер</option>
           </select>
         </div>
         <div class="col-12 col-md-2">
@@ -98,31 +108,45 @@
     </div>
     <div class="col-12 col-xl-4">
       <div class="surface-panel h-100">
-        <div class="section-title">Data quality overview</div>
+        <div class="section-title">Качество данных</div>
         <div class="section-subtitle mb-3">Быстрая сводка по тому, насколько качественно подготовлены клиентские профили.</div>
         <div class="kpi-strip mb-3">
           <div class="kpi-pill">
-            <span class="text-muted small">total clients</span>
+            <span class="text-muted small">всего клиентов</span>
             <b>{{ clients | length }}</b>
           </div>
           <div class="kpi-pill">
-            <span class="text-muted small">enriched</span>
+            <span class="text-muted small">обогащено</span>
             <b>{{ clients | selectattr('enrichment_status', 'equalto', 'enriched') | list | length }}</b>
           </div>
           <div class="kpi-pill">
-            <span class="text-muted small">vip clients</span>
+            <span class="text-muted small">VIP-клиенты</span>
             <b>{{ clients | selectattr('segment', 'equalto', 'vip') | list | length }}</b>
           </div>
           <div class="kpi-pill">
-            <span class="text-muted small">demo records</span>
+            <span class="text-muted small">демо-записи</span>
             <b>{{ clients | selectattr('is_demo', 'equalto', True) | list | length }}</b>
           </div>
         </div>
         <div class="soft-note">
-          <div class="fw-semibold mb-1">Recommended demo story</div>
+          <div class="fw-semibold mb-1">Рекомендуемый сценарий демо</div>
           <div class="section-subtitle">
             Сначала покажите, что у клиента есть только базовые поля. Затем запустите enrichment и продемонстрируйте,
             как профиль становится пригодным для более умной генерации поздравлений.
+          </div>
+        </div>
+        <div class="soft-note mt-3">
+          <div class="fw-semibold mb-1">Текущие режимы</div>
+          <div class="section-subtitle">
+            Провайдер enrichment: <b>{{ company_enrichment_provider }}</b>.<br>
+            Отправка поздравлений: <b>{% if delivery_schedule_mode == "immediate" %}сразу после генерации/аппрува{% else %}в дату события{% endif %}</b>.
+          </div>
+        </div>
+        <div class="soft-note mt-3">
+          <div class="fw-semibold mb-1">Как использовать CSV и DaData вместе</div>
+          <div class="section-subtitle">
+            CSV-импорт создаёт локально обогащённую базу для демо. Если включён <b>DaData</b>, используйте актуализацию по ИНН для проверки,
+            что внешний источник действительно работает и умеет обновлять уже загруженные профили.
           </div>
         </div>
       </div>
@@ -141,22 +165,31 @@
             <th>ID</th>
             <th>ФИО</th>
             <th>Компания / Должность</th>
-            <th>Enrichment</th>
-            <th>Profession</th>
+            <th>Обогащение</th>
+            <th>Профиль</th>
             <th>Сегмент</th>
-            <th>Demo</th>
+            <th>Тип записи</th>
             <th>Контакт</th>
             <th>ДР</th>
-            <th>Actions</th>
+            <th class="actions-col">Действия</th>
           </tr>
         </thead>
         <tbody>
           {% for c in clients %}
+            {% set phone_items = split_contact_values(c.phone) %}
             <tr>
               <td class="fw-semibold">#{{ c.id }}</td>
               <td>
                 <div class="fw-semibold">{{ c.first_name }} {{ c.middle_name or "" }} {{ c.last_name }}</div>
-                <div class="text-muted small">{{ c.email or c.phone or "Контакт не указан" }}</div>
+                <div class="text-muted small">
+                  {% if c.email %}
+                    {{ c.email }}
+                  {% elif phone_items %}
+                    {{ phone_items[0] }}
+                  {% else %}
+                    Контакт не указан
+                  {% endif %}
+                </div>
               </td>
               <td>
                 <div class="fw-semibold">{{ c.company_name or "—" }}</div>
@@ -169,11 +202,11 @@
                 <div><b>ИНН:</b> {{ c.inn or "—" }}</div>
                 <div>
                   {% if c.enrichment_status == "enriched" %}
-                    <span class="badge text-bg-success">enriched</span>
+                    <span class="badge text-bg-success">обогащено</span>
                   {% elif c.enrichment_status == "pending" %}
-                    <span class="badge text-bg-warning">pending</span>
+                    <span class="badge text-bg-warning">в процессе</span>
                   {% elif c.enrichment_status == "error" %}
-                    <span class="badge text-bg-danger">error</span>
+                    <span class="badge text-bg-danger">ошибка</span>
                   {% else %}
                     <span class="badge text-bg-secondary">{{ c.enrichment_status }}</span>
                   {% endif %}
@@ -181,33 +214,69 @@
                 {% if c.okved_code or c.okved_name %}
                   <div class="mt-1"><b>ОКВЭД:</b> {{ c.okved_code or "" }} {{ c.okved_name or "" }}</div>
                 {% endif %}
+                {% if c.company_status %}
+                  <div class="text-muted">Статус компании: {{ c.company_status }}</div>
+                {% endif %}
                 {% if c.ceo_name %}
-                  <div class="text-muted">CEO: {{ c.ceo_name }}</div>
+                  <div class="text-muted">Руководитель: {{ c.ceo_name }}</div>
+                {% endif %}
+                {% if c.company_address %}
+                  <div class="text-muted">Адрес: {{ c.company_address }}</div>
                 {% endif %}
                 {% if c.enrichment_error %}
                   <div class="text-danger mt-1">{{ c.enrichment_error }}</div>
                 {% endif %}
               </td>
-              <td class="small"><span class="badge text-bg-light">{{ c.profession or "" }}</span></td>
-              <td><span class="badge text-bg-secondary">{{ c.segment }}</span></td>
+              <td class="small">
+                <span class="badge text-bg-light">
+                  {% if c.profession == "management" %}управление{% elif c.profession == "finance" %}финансы{% elif c.profession == "accounting" %}бухгалтерия{% elif c.profession == "it" %}IT{% elif c.profession == "hr" %}HR{% elif c.profession == "marketing" %}маркетинг{% elif c.profession == "sales" %}продажи{% elif c.profession == "logistics" %}логистика{% elif c.profession == "construction" %}строительство{% elif c.profession == "medicine" %}медицина{% elif c.profession == "security" %}безопасность{% else %}не задан{% endif %}
+                </span>
+              </td>
+              <td>
+                <span class="badge text-bg-secondary">
+                  {% if c.segment == "vip" %}VIP{% elif c.segment == "loyal" %}лояльный{% elif c.segment == "new" %}новый{% else %}стандарт{% endif %}
+                </span>
+              </td>
               <td>
                 {% if c.is_demo %}
-                  <span class="badge text-bg-warning">demo</span>
+                  <span class="badge text-bg-warning">демо</span>
                 {% else %}
-                  <span class="badge text-bg-success">real</span>
+                  <span class="badge text-bg-success">реальный</span>
                 {% endif %}
               </td>
-              <td class="small">{{ c.email or c.phone or "—" }}</td>
+              <td class="small">
+                {% if c.email %}
+                  <div class="fw-semibold text-break">{{ c.email }}</div>
+                {% endif %}
+                {% if phone_items %}
+                  <div class="d-flex flex-column gap-1 mt-1">
+                    {% for phone in phone_items[:2] %}
+                      <span class="badge rounded-pill text-bg-light contact-pill">{{ phone }}</span>
+                    {% endfor %}
+                  </div>
+                  {% if phone_items | length > 2 %}
+                    <div class="text-muted mt-1">ещё {{ (phone_items | length) - 2 }} номер(а)</div>
+                  {% endif %}
+                {% elif not c.email %}
+                  —
+                {% endif %}
+              </td>
               <td class="small">{{ c.birth_date or "" }}</td>
-              <td>
-                <form method="post" action="/actions/clients/{{ c.id }}/enrich">
-                  <button class="btn btn-sm btn-outline-success">Enrich</button>
-                </form>
+              <td class="actions-col">
+                {% if c.enrichment_status == "enriched" and company_enrichment_provider == "demo" %}
+                  <span class="badge text-bg-success">Готово</span>
+                {% else %}
+                  <form method="post" action="/actions/clients/{{ c.id }}/enrich">
+                    <button class="btn btn-sm btn-outline-success action-btn">
+                      {% if c.enrichment_status == "enriched" %}Актуализировать{% else %}Обогатить{% endif %}
+                    </button>
+                  </form>
+                {% endif %}
               </td>
             </tr>
           {% else %}
             <tr>
-              <td colspan="10" class="empty-state">Клиентов пока нет. Используйте `Seed demo data` или добавьте запись вручную.</td>
+              <td colspan="10" class="empty-state">Клиентов пока нет. Используйте кнопку `Загрузить демо-данные` или добавьте запись вручную.</td>
             </tr>
           {% endfor %}
         </tbody>

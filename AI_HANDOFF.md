@@ -6,7 +6,7 @@
 ## TL;DR (что это за проект)
 
 MVP+: конвейер поздравлений (события → enrichment профиля организации → генерация текста/открытки → отправка/log) с web UI + API.  
-Поддерживает офлайн‑режим и интеграцию с **GigaChat** (текст + открытки), а также локальный demo-registry для enrichment компаний и feedback-loop менеджеров.
+Поддерживает офлайн‑режим и интеграцию с **GigaChat** (текст + открытки), импорт условной базы компаний из CSV, а также enrichment компаний через `demo`/`dadata`/`hybrid`.
 
 ## Безопасность общения (обязательные правила)
 
@@ -48,6 +48,13 @@ scripts\run_backend.cmd
 - **Офлайн**:
   - `LLM_MODE=template`
   - `IMAGE_MODE=pillow`
+- **Режим доставки**:
+  - `DELIVERY_SCHEDULE_MODE=event_date`
+  - `DELIVERY_SCHEDULE_MODE=immediate`
+- **Enrichment компаний**:
+  - `COMPANY_ENRICHMENT_PROVIDER=demo|dadata|hybrid`
+  - `COMPANY_IMPORT_CSV_PATH=...`
+  - `DADATA_API_KEY=...`
 - **GigaChat**:
   - `LLM_MODE=gigachat`
   - `IMAGE_MODE=gigachat`
@@ -77,7 +84,7 @@ scripts\run_gigachat_smoke.cmd
   - клиент: `backend/app/agent/gigachat_client.py`
   - провайдеры: `backend/app/agent/gigachat_providers.py`
 - **Детектор событий**: `backend/app/services/event_detector.py`
-- **Enrichment организаций**: `backend/app/services/company_enrichment.py` + `backend/app/resources/company_registry_demo.json`
+- **Enrichment организаций**: `backend/app/services/company_enrichment.py`, `backend/app/services/company_import.py`, `backend/app/services/dadata_client.py`, `backend/app/resources/company_data/*`
 - **Reset runtime data (для демо)**: `backend/app/services/reset_runtime.py` + кнопка в UI
 - **Отправка (MVP outbox)**: `backend/app/services/sender.py`
 - **Guardrails**: `backend/app/services/guardrails.py`
@@ -93,7 +100,7 @@ scripts\run_gigachat_smoke.cmd
 
 - **VIP approval flow**: уже реализован базовый вариант: `vip` → `needs_approval`, подтверждение в UI → отправка.
 - **Статистика/аудит**: AgentRun + feedback уже есть, дальше нужны агрегированные метрики по периодам, причины ошибок, повторная отправка, экспорт.
-- **Реальный enrichment**: заменить demo-registry на интеграции/ETL по ИНН (ОКВЭД/руководитель/источник).
+- **Реальный enrichment**: расширять поверх уже подключённого `DaData` (кэш, ретраи, лимиты, fallback-стратегии, batch-поток).
 - **Реальные каналы отправки**: SMTP/SMS/мессенджеры.
 
 ## Copy‑paste для нового чата (Cursor)

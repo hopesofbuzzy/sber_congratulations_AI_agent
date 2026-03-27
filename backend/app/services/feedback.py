@@ -16,7 +16,9 @@ async def save_feedback(
     outcome: str = "unknown",
     notes: str | None = None,
 ) -> Feedback:
-    greeting = (await session.execute(select(Greeting).where(Greeting.id == greeting_id))).scalar_one()
+    greeting = (
+        await session.execute(select(Greeting).where(Greeting.id == greeting_id))
+    ).scalar_one()
     if score is not None and not (1 <= int(score) <= 5):
         raise ValueError("score must be between 1 and 5")
     norm_outcome = (outcome or "unknown").strip().lower()

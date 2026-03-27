@@ -13,10 +13,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.agent.orchestrator import run_once
+from app.core.config import settings
 from app.db.models import AgentRun, Client, Delivery, Event, Feedback, Greeting
 from app.db.session import get_session
 from app.services.approval import approve_greeting, reject_greeting
 from app.services.company_enrichment import enrich_client_company_by_id, enrich_missing_clients
+from app.services.company_import import import_clients_from_company_csv
 from app.services.feedback import save_feedback
 from app.services.reset_runtime import reset_runtime_data
 
@@ -26,11 +28,24 @@ TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 
+def _split_contact_values(value: str | None) -> list[str]:
+    text = (value or "").replace("\r", "\n")
+    text = text.replace(";", ",").replace("\n", ",")
+    parts = [re.sub(r"\s+", " ", chunk).strip(" ,") for chunk in text.split(",")]
+    return [part for part in parts if part]
+
+
+templates.env.globals["split_contact_values"] = _split_contact_values
+
+
 @router.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request, session: AsyncSession = Depends(get_session)):
+    qp = request.query_params
     clients_count = (await session.execute(select(func.count(Client.id)))).scalar_one()
     enriched_clients_count = (
-        await session.execute(select(func.count(Client.id)).where(Client.enrichment_status == "enriched"))
+        await session.execute(
+            select(func.count(Client.id)).where(Client.enrichment_status == "enriched")
+        )
     ).scalar_one()
     events_count = (await session.execute(select(func.count(Event.id)))).scalar_one()
     greetings_count = (await session.execute(select(func.count(Greeting.id)))).scalar_one()
@@ -46,6 +61,7 @@ async def dashboard(request: Request, session: AsyncSession = Depends(get_sessio
         request,
         "dashboard.html",
         {
+            "msg": qp.get("msg", ""),
             "clients_count": clients_count,
             "enriched_clients_count": enriched_clients_count,
             "events_count": events_count,
@@ -74,16 +90,42 @@ async def action_seed_demo(session: AsyncSession = Depends(get_session)):
 
 @router.post("/actions/reset-runtime")
 async def action_reset_runtime(session: AsyncSession = Depends(get_session)):
-    await reset_runtime_data(session)
-    return RedirectResponse(url="/", status_code=303)
+    result = await reset_runtime_data(session, clear_clients=True)
+    msg = (
+        f"Демо-среда очищена: clients={result['cleared_clients']}, "
+        f"files={result['cleared_files']}"
+    )
+    return RedirectResponse(url=f"/?msg={quote(msg)}", status_code=303)
 
 
 @router.post("/actions/enrich-clients")
 async def action_enrich_clients(session: AsyncSession = Depends(get_session)):
     result = await enrich_missing_clients(session)
+    provider = (settings.company_enrichment_provider or "demo").strip().lower()
     msg = (
-        f"Обогащение завершено: enriched={result['enriched']}, "
+        f"Обогащение ({provider}) завершено: enriched={result['enriched']}, "
         f"errors={result['errors']}, processed={result['processed']}"
+    )
+    return RedirectResponse(url=f"/clients?msg={quote(msg)}", status_code=303)
+
+
+@router.post("/actions/refresh-clients-external")
+async def action_refresh_clients_external(session: AsyncSession = Depends(get_session)):
+    provider = (settings.company_enrichment_provider or "demo").strip().lower()
+    result = await enrich_missing_clients(session, force=True)
+    msg = (
+        f"Актуализация ({provider}) завершена: enriched={result['enriched']}, "
+        f"errors={result['errors']}, processed={result['processed']}"
+    )
+    return RedirectResponse(url=f"/clients?msg={quote(msg)}", status_code=303)
+
+
+@router.post("/actions/import-company-base")
+async def action_import_company_base(session: AsyncSession = Depends(get_session)):
+    result = await import_clients_from_company_csv(session)
+    msg = (
+        f"Импорт базы компаний завершён: added={result['added']}, "
+        f"updated={result['updated']}, skipped={result['skipped']}"
     )
     return RedirectResponse(url=f"/clients?msg={quote(msg)}", status_code=303)
 
@@ -109,6 +151,12 @@ async def clients_page(request: Request, session: AsyncSession = Depends(get_ses
             "clients": clients,
             "msg": qp.get("msg", ""),
             "error": qp.get("error", ""),
+            "company_enrichment_provider": (settings.company_enrichment_provider or "demo")
+            .strip()
+            .lower(),
+            "delivery_schedule_mode": (settings.delivery_schedule_mode or "event_date")
+            .strip()
+            .lower(),
         },
     )
 
@@ -270,7 +318,14 @@ async def greetings_page(request: Request, session: AsyncSession = Depends(get_s
     return templates.TemplateResponse(
         request,
         "greetings.html",
-        {"greetings": greetings, "msg": qp.get("msg", ""), "error": qp.get("error", "")},
+        {
+            "greetings": greetings,
+            "msg": qp.get("msg", ""),
+            "error": qp.get("error", ""),
+            "delivery_schedule_mode": (settings.delivery_schedule_mode or "event_date")
+            .strip()
+            .lower(),
+        },
     )
 
 
@@ -291,7 +346,7 @@ async def action_feedback_greeting(
             notes=notes,
         )
         return RedirectResponse(
-            url=f"/greetings?msg={quote('Feedback сохранен')}",
+            url=f"/greetings?msg={quote('Отзыв сохранён')}",
             status_code=303,
         )
     except Exception as e:

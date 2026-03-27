@@ -6,6 +6,7 @@ import logging
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.db.models import Client, Event, Greeting
 from app.services.sender import send_greeting
 
@@ -13,6 +14,10 @@ log = logging.getLogger(__name__)
 
 _SENDABLE_STATUSES = {"generated", "approved"}
 _CONSIDER_STATUSES = {"generated", "approved", "needs_approval"}
+
+
+def _is_immediate_delivery_mode() -> bool:
+    return (settings.delivery_schedule_mode or "event_date").strip().lower() == "immediate"
 
 
 def _event_priority(ev: Event) -> int:
@@ -43,11 +48,12 @@ async def send_due_greetings(
     *,
     today: dt.date,
 ) -> dict:
-    """Send greetings that are due today.
+    """Send greetings that are due today or immediately.
 
     Principles:
     - We MAY generate greetings ahead of time (lookahead window).
-    - We send ONLY on the day of the event (Event.event_date == today).
+    - In `event_date` mode we send ONLY on the day of the event.
+    - In `immediate` mode we send as soon as the greeting is ready.
     - VIP greetings are sent ONLY if they were approved before/at today.
 
     Returns counts for reporting/UI.
@@ -58,15 +64,15 @@ async def send_due_greetings(
     suppressed = 0
 
     # Select due greetings with their event + client (including needs_approval to enforce priority).
-    rows = (
-        await session.execute(
-            select(Greeting, Event, Client)
-            .join(Event, Event.id == Greeting.event_id)
-            .join(Client, Client.id == Greeting.client_id)
-            .where(Event.event_date == today)
-            .where(Greeting.status.in_(_CONSIDER_STATUSES))
-        )
-    ).all()
+    stmt = (
+        select(Greeting, Event, Client)
+        .join(Event, Event.id == Greeting.event_id)
+        .join(Client, Client.id == Greeting.client_id)
+        .where(Greeting.status.in_(_CONSIDER_STATUSES))
+    )
+    if not _is_immediate_delivery_mode():
+        stmt = stmt.where(Event.event_date == today)
+    rows = (await session.execute(stmt)).all()
 
     # Group by client so we can enforce "1 message per client per day" with priority.
     by_client: dict[int, list[tuple[Greeting, Event, Client]]] = {}

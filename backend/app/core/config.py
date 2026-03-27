@@ -21,7 +21,11 @@ class Settings(BaseSettings):
     max_gigachat_images_per_run: int = 5  # speed + token safety; rest uses Pillow fallback
 
     send_mode: str = "file"  # file|smtp|noop
+    delivery_schedule_mode: str = "event_date"  # event_date|immediate
     outbox_dir: str = "./data/outbox"
+
+    company_enrichment_provider: str = "demo"  # demo|dadata|hybrid
+    company_import_csv_path: str = "./app/resources/company_data/export-base_demo_takbup.csv"
 
     # SMTP (optional, real email sending)
     smtp_host: str | None = None
@@ -68,6 +72,14 @@ class Settings(BaseSettings):
     # TLS / certificates
     gigachat_verify_ssl_certs: bool = True
     gigachat_ca_bundle_file: str | None = None
+
+    # DaData company enrichment (optional)
+    dadata_api_key: str | None = None
+    dadata_base_url: str = "https://suggestions.dadata.ru/suggestions/api/4_1/rs"
+    dadata_timeout_sec: float = 10.0
+    dadata_party_branch_type: str = "MAIN"
+    dadata_party_type: str = "LEGAL"
+    dadata_party_status: str = "ACTIVE"
 
 
 settings = Settings()

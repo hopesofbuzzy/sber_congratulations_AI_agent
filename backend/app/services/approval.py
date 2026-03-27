@@ -5,6 +5,7 @@ import datetime as dt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.db.models import Client, Event, Greeting
 from app.services.sender import send_greeting
 
@@ -34,6 +35,9 @@ async def approve_greeting(
     await session.refresh(g)
 
     today = today or dt.date.today()
+    immediate_mode = (
+        settings.delivery_schedule_mode or "event_date"
+    ).strip().lower() == "immediate"
 
     # Find client/recipient
     c = None
@@ -45,9 +49,9 @@ async def approve_greeting(
         if c:
             recipient = c.email or c.phone or f"client:{c.id}"
 
-    # Do NOT send earlier than the event date. We generate/approve ahead of time, but deliver on due day.
+    # In regular mode we do not send earlier than the event date.
     ev = (await session.execute(select(Event).where(Event.id == g.event_id))).scalar_one_or_none()
-    if ev is not None and ev.event_date != today:
+    if ev is not None and not immediate_mode and ev.event_date != today:
         return {
             "status": "approved",
             "reason": "scheduled",

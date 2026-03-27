@@ -2,7 +2,7 @@
 {% block content %}
   <div class="d-flex align-items-center justify-content-between mb-3">
     <div class="page-intro">
-      <h2 class="mb-1">Events</h2>
+      <h2 class="mb-1">События</h2>
       <div class="text-muted">Поводы для поздравлений: дни рождения, праздники и будущие ручные сценарии.</div>
     </div>
   </div>
@@ -10,21 +10,21 @@
   <div class="row g-4 mb-4">
     <div class="col-12 col-md-4">
       <div class="surface-panel metric-card">
-        <div class="metric-label">Total events</div>
+        <div class="metric-label">Всего событий</div>
         <div class="metric-value">{{ events | length }}</div>
         <div class="metric-hint">Все события, находящиеся в рабочем окне.</div>
       </div>
     </div>
     <div class="col-12 col-md-4">
       <div class="surface-panel metric-card">
-        <div class="metric-label">Birthdays</div>
+        <div class="metric-label">Дни рождения</div>
         <div class="metric-value">{{ events | selectattr('event_type', 'equalto', 'birthday') | list | length }}</div>
         <div class="metric-hint">Персональные поводы на базе CRM-профилей.</div>
       </div>
     </div>
     <div class="col-12 col-md-4">
       <div class="surface-panel metric-card">
-        <div class="metric-label">Holidays</div>
+        <div class="metric-label">Праздники</div>
         <div class="metric-value">{{ events | selectattr('event_type', 'equalto', 'holiday') | list | length }}</div>
         <div class="metric-hint">Календарные и профессиональные праздники.</div>
       </div>

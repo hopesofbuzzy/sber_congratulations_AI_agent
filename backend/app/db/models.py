@@ -28,9 +28,13 @@ class Client(Base):
     profession: Mapped[str | None] = mapped_column(String(80), nullable=True)
     segment: Mapped[str] = mapped_column(String(50), default="standard")  # vip|new|loyal|standard
     inn: Mapped[str | None] = mapped_column(String(12), nullable=True)
+    ogrn: Mapped[str | None] = mapped_column(String(15), nullable=True)
+    kpp: Mapped[str | None] = mapped_column(String(9), nullable=True)
     ceo_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     okved_code: Mapped[str | None] = mapped_column(String(32), nullable=True)
     okved_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    company_status: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    company_address: Mapped[str | None] = mapped_column(Text, nullable=True)
     company_site: Mapped[str | None] = mapped_column(String(255), nullable=True)
     source_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     enrichment_status: Mapped[str] = mapped_column(

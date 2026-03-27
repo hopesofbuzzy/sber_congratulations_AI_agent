@@ -1,10 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
+  {% if msg %}
+    <div class="alert alert-success">{{ msg }}</div>
+  {% endif %}
   <div class="hero-card mb-4">
     <div class="row g-4 align-items-center">
       <div class="col-12 col-xl-8">
-        <div class="hero-badge mb-3">Control center</div>
-        <h1 class="h2 mb-3">Sber congratulations pipeline</h1>
+        <div class="hero-badge mb-3">Центр управления</div>
+        <h1 class="h2 mb-3">Конвейер поздравлений Сбера</h1>
         <p class="mb-0 text-soft">
           Панель управления демонстрирует полный цикл: подготовку клиентских профилей, enrichment компаний,
           генерацию поздравлений, human-in-the-loop review и фиксацию доставок.
@@ -13,15 +16,15 @@
       <div class="col-12 col-xl-4">
         <div class="kpi-strip justify-content-xl-end">
           <div class="kpi-pill">
-            <span class="text-muted small">clients</span>
+            <span class="text-muted small">клиенты</span>
             <b>{{ clients_count }}</b>
           </div>
           <div class="kpi-pill">
-            <span class="text-muted small">enriched</span>
+            <span class="text-muted small">обогащено</span>
             <b>{{ enriched_clients_count }}</b>
           </div>
           <div class="kpi-pill">
-            <span class="text-muted small">feedback</span>
+            <span class="text-muted small">обратная связь</span>
             <b>{{ feedback_count }}</b>
           </div>
         </div>
@@ -32,44 +35,44 @@
   <div class="row g-3">
     <div class="col-12 col-md-2">
       <div class="surface-panel metric-card">
-          <div class="metric-label">Clients</div>
+          <div class="metric-label">Клиенты</div>
           <div class="metric-value">{{ clients_count }}</div>
-          <div class="metric-hint">CRM and demo personas available for generation.</div>
+          <div class="metric-hint">CRM-профили и демо-персоны, доступные для генерации.</div>
         </div>
     </div>
     <div class="col-12 col-md-2">
       <div class="surface-panel metric-card">
-          <div class="metric-label">Enriched</div>
+          <div class="metric-label">Обогащено</div>
           <div class="metric-value">{{ enriched_clients_count }}</div>
-          <div class="metric-hint">Profiles with `ИНН`, `ОКВЭД`, CEO and source data.</div>
+          <div class="metric-hint">Профили с `ИНН`, `ОКВЭД`, руководителем и источником данных.</div>
         </div>
     </div>
     <div class="col-12 col-md-2">
       <div class="surface-panel metric-card">
-          <div class="metric-label">Events</div>
+          <div class="metric-label">События</div>
           <div class="metric-value">{{ events_count }}</div>
-          <div class="metric-hint">Upcoming triggers detected for birthdays and holidays.</div>
+          <div class="metric-hint">Найденные триггеры на дни рождения и праздники.</div>
         </div>
     </div>
     <div class="col-12 col-md-2">
       <div class="surface-panel metric-card">
-          <div class="metric-label">Greetings</div>
+          <div class="metric-label">Поздравления</div>
           <div class="metric-value">{{ greetings_count }}</div>
-          <div class="metric-hint">Generated texts and cards ready for review or send.</div>
+          <div class="metric-hint">Сгенерированные тексты и открытки, готовые к review и отправке.</div>
         </div>
     </div>
     <div class="col-12 col-md-2">
       <div class="surface-panel metric-card">
-          <div class="metric-label">Deliveries</div>
+          <div class="metric-label">Доставки</div>
           <div class="metric-value">{{ deliveries_count }}</div>
-          <div class="metric-hint">Outbox records and idempotent delivery history.</div>
+          <div class="metric-hint">Журнал outbox и история идемпотентных отправок.</div>
         </div>
     </div>
     <div class="col-12 col-md-2">
       <div class="surface-panel metric-card">
-          <div class="metric-label">Feedback</div>
+        <div class="metric-label">Обратная связь</div>
           <div class="metric-value">{{ feedback_count }}</div>
-          <div class="metric-hint">Manager quality signals captured for future tuning.</div>
+          <div class="metric-hint">Сигналы качества от менеджеров для будущей настройки.</div>
         </div>
     </div>
   </div>
@@ -77,41 +80,41 @@
   <div class="row g-4 mt-1">
     <div class="col-12 col-xl-5">
       <div class="surface-panel h-100">
-        <div class="section-title">How to present the demo</div>
+        <div class="section-title">Как показать демо</div>
         <div class="section-subtitle mb-4">Короткий сценарий, который показывает реальный прогресс проекта.</div>
         <div class="d-grid gap-3">
           <div class="workflow-step">
             <div class="workflow-index">1</div>
             <div>
-              <div class="fw-semibold">Seed demo data</div>
-              <div class="section-subtitle">Создаёт 5 клиентов с актуальными событиями в ближайшем окне.</div>
+              <div class="fw-semibold">Загрузить демо-данные</div>
+              <div class="section-subtitle">Создаёт 5 клиентов с событиями на сегодня для убедительного сценария показа.</div>
             </div>
           </div>
           <div class="workflow-step">
             <div class="workflow-index">2</div>
             <div>
-              <div class="fw-semibold">Enrich company profiles</div>
+              <div class="fw-semibold">Обогатить профили компаний</div>
               <div class="section-subtitle">Заполняет `ИНН`, `ОКВЭД`, руководителя и источник данных.</div>
             </div>
           </div>
           <div class="workflow-step">
             <div class="workflow-index">3</div>
             <div>
-              <div class="fw-semibold">Run agent now</div>
+              <div class="fw-semibold">Запустить агента</div>
               <div class="section-subtitle">Генерирует поздравления и открытки на основе enriched-профилей.</div>
             </div>
           </div>
           <div class="workflow-step">
             <div class="workflow-index">4</div>
             <div>
-              <div class="fw-semibold">Review and feedback</div>
+              <div class="fw-semibold">Проверка и обратная связь</div>
               <div class="section-subtitle">Сохраните feedback менеджера и покажите живой human-in-the-loop.</div>
             </div>
           </div>
           <div class="workflow-step">
             <div class="workflow-index">5</div>
             <div>
-              <div class="fw-semibold">Deliveries and artifacts</div>
+              <div class="fw-semibold">Доставки и артефакты</div>
               <div class="section-subtitle">Продемонстрируйте outbox и generated cards как итог конвейера.</div>
             </div>
           </div>
@@ -121,7 +124,7 @@
     <div class="col-12 col-xl-7">
       <div class="surface-card h-100">
         <div class="card-header d-flex align-items-center justify-content-between">
-          <span>Latest agent runs</span>
+          <span>Последние запуски агента</span>
           <a href="/runs" class="small">Все запуски</a>
         </div>
         <div class="card-body table-responsive">
@@ -129,14 +132,14 @@
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Status</th>
-                <th>Triggered by</th>
-                <th>Started</th>
-                <th>Finished</th>
-                <th>Events</th>
-                <th>Greetings</th>
-                <th>Sent</th>
-                <th>Errors</th>
+                <th>Статус</th>
+                <th>Источник</th>
+                <th>Старт</th>
+                <th>Финиш</th>
+                <th>События</th>
+                <th>Поздравления</th>
+                <th>Отправлено</th>
+                <th>Ошибки</th>
               </tr>
             </thead>
             <tbody>
@@ -145,11 +148,11 @@
                   <td class="fw-semibold">#{{ r.id }}</td>
                   <td>
                     {% if r.status == "success" %}
-                      <span class="badge text-bg-success">success</span>
+                      <span class="badge text-bg-success">успех</span>
                     {% elif r.status == "partial" %}
-                      <span class="badge text-bg-warning">partial</span>
+                      <span class="badge text-bg-warning">частично</span>
                     {% elif r.status == "error" %}
-                      <span class="badge text-bg-danger">error</span>
+                      <span class="badge text-bg-danger">ошибка</span>
                     {% else %}
                       <span class="badge text-bg-secondary">{{ r.status }}</span>
                     {% endif %}
@@ -164,7 +167,7 @@
                 </tr>
               {% else %}
                 <tr>
-                  <td colspan="9" class="empty-state">Запусков пока нет. Используйте `Run agent now`, чтобы заполнить журнал.</td>
+                  <td colspan="9" class="empty-state">Запусков пока нет. Используйте кнопку `Запустить агента`, чтобы заполнить журнал.</td>
                 </tr>
               {% endfor %}
             </tbody>

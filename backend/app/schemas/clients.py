@@ -15,9 +15,13 @@ class ClientCreate(BaseModel):
     profession: str | None = Field(default=None, max_length=80)
     segment: str = Field(default="standard", max_length=50)
     inn: str | None = Field(default=None, min_length=10, max_length=12)
+    ogrn: str | None = Field(default=None, max_length=15)
+    kpp: str | None = Field(default=None, max_length=9)
     ceo_name: str | None = Field(default=None, max_length=200)
     okved_code: str | None = Field(default=None, max_length=32)
     okved_name: str | None = Field(default=None, max_length=255)
+    company_status: str | None = Field(default=None, max_length=50)
+    company_address: str | None = None
     company_site: str | None = Field(default=None, max_length=255)
     source_url: str | None = Field(default=None, max_length=500)
     enrichment_status: str = Field(default="not_requested", max_length=50)
@@ -43,9 +47,13 @@ class ClientOut(BaseModel):
     profession: str | None
     segment: str
     inn: str | None
+    ogrn: str | None
+    kpp: str | None
     ceo_name: str | None
     okved_code: str | None
     okved_name: str | None
+    company_status: str | None
+    company_address: str | None
     company_site: str | None
     source_url: str | None
     enrichment_status: str

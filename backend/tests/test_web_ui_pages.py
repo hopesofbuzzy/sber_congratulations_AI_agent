@@ -19,9 +19,9 @@ async def test_dashboard_page_renders_new_presentation_layout(db_session):
     app.dependency_overrides.clear()
 
     assert resp.status_code == 200
-    assert "Sber congratulations pipeline" in resp.text
-    assert "Presentation-ready workspace" in resp.text
-    assert "How to present the demo" in resp.text
+    assert "Конвейер поздравлений Сбера" in resp.text
+    assert "Рабочее пространство для презентации" in resp.text
+    assert "Как показать демо" in resp.text
 
 
 async def test_clients_page_renders_enrichment_ui(db_session):
@@ -37,6 +37,7 @@ async def test_clients_page_renders_enrichment_ui(db_session):
     app.dependency_overrides.clear()
 
     assert resp.status_code == 200
-    assert "Data quality overview" in resp.text
-    assert "Enrich company profiles" in resp.text
+    assert "Качество данных" in resp.text
+    assert "Импортировать базу компаний" in resp.text
+    assert "Обогатить профили компаний" in resp.text
     assert "Добавить клиента вручную" in resp.text

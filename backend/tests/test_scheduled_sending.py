@@ -112,3 +112,106 @@ async def test_due_sender_sends_on_event_day(db_session):
 
     await db_session.refresh(g)
     assert g.status == "sent"
+
+
+async def test_approve_sends_immediately_when_mode_enabled(db_session, monkeypatch):
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "delivery_schedule_mode", "immediate", raising=False)
+    today = dt.date(2025, 12, 20)
+    tomorrow = today + dt.timedelta(days=1)
+
+    c = Client(
+        first_name="Вип",
+        middle_name="Тестович",
+        last_name="Клиент",
+        profession="management",
+        segment="vip",
+        email="vip.real@mycompany.test",
+        preferred_channel="email",
+        birth_date=dt.date(1990, 1, 1),
+        is_demo=False,
+    )
+    db_session.add(c)
+    await db_session.commit()
+    await db_session.refresh(c)
+
+    ev = Event(
+        client_id=c.id,
+        event_type="manual",
+        event_date=tomorrow,
+        title="Праздник позже",
+        details={},
+    )
+    db_session.add(ev)
+    await db_session.commit()
+    await db_session.refresh(ev)
+
+    g = Greeting(
+        event_id=ev.id,
+        client_id=c.id,
+        tone="official",
+        subject="Тестовое поздравление",
+        body="Достаточно длинный текст поздравления для прохождения валидации." * 3,
+        image_path=None,
+        status="needs_approval",
+    )
+    db_session.add(g)
+    await db_session.commit()
+    await db_session.refresh(g)
+
+    res = await approve_greeting(db_session, greeting_id=g.id, approved_by="test", today=today)
+    assert res["status"] == "sent"
+
+
+async def test_due_sender_can_send_future_greeting_immediately(db_session, monkeypatch):
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "delivery_schedule_mode", "immediate", raising=False)
+    today = dt.date(2025, 12, 20)
+    future_day = today + dt.timedelta(days=5)
+
+    c = Client(
+        first_name="Иван",
+        middle_name="Иванович",
+        last_name="Петров",
+        profession="accounting",
+        segment="standard",
+        email="real.user@mycompany.test",
+        preferred_channel="email",
+        birth_date=dt.date(1990, 1, 1),
+        is_demo=False,
+    )
+    db_session.add(c)
+    await db_session.commit()
+    await db_session.refresh(c)
+
+    ev = Event(
+        client_id=c.id,
+        event_type="manual",
+        event_date=future_day,
+        title="Событие позже",
+        details={},
+    )
+    db_session.add(ev)
+    await db_session.commit()
+    await db_session.refresh(ev)
+
+    g = Greeting(
+        event_id=ev.id,
+        client_id=c.id,
+        tone="warm",
+        subject="Тестовое поздравление",
+        body="Достаточно длинный текст поздравления для прохождения валидации." * 3,
+        image_path=None,
+        status="generated",
+    )
+    db_session.add(g)
+    await db_session.commit()
+    await db_session.refresh(g)
+
+    res = await send_due_greetings(db_session, today=today)
+    assert res["sent"] == 1
+
+    await db_session.refresh(g)
+    assert g.status == "sent"
