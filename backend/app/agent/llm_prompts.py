@@ -30,6 +30,7 @@ def build_user_prompt(
     segment: str,
     facts: dict,
     tone_hint: str | None = None,
+    event_details: dict | None = None,
 ) -> str:
     """Build user prompt for greeting generation.
 
@@ -78,6 +79,23 @@ def build_user_prompt(
             "- Если есть official_company_name или okved_name: используй их как источник более точной отраслевой персонализации.\n"
             "- Для каждого праздника найди уникальный угол: что он значит для бизнеса/личности.\n"
         )
+        if event_type.lower() == "manual":
+            details = event_details or {}
+            manual_kind = details.get("manual_kind")
+            focus_hint = details.get("focus_hint")
+            manual_lines = [
+                "ДОПОЛНИТЕЛЬНЫЙ КОНТЕКСТ для manual-события:\n",
+                "- Это управляемый деловой повод, а не календарный праздник.\n",
+                "- Делай акцент на уважении, партнёрстве, развитии бизнеса и роли клиента.\n",
+            ]
+            if manual_kind:
+                manual_lines.append(f"- Тип делового сценария: {manual_kind}.\n")
+            if focus_hint:
+                manual_lines.append(f"- Бизнес-фокус сценария: {focus_hint}.\n")
+            manual_lines.append(
+                "- Не придумывай достижения, цифры, сделки или конкретные совместные проекты, если их нет в FACTS.\n"
+            )
+            personalization_guidance += "".join(manual_lines)
 
     # Строим промпт
     prompt_parts = [

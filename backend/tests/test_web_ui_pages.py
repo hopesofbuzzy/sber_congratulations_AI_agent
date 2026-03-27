@@ -41,3 +41,21 @@ async def test_clients_page_renders_enrichment_ui(db_session):
     assert "Импортировать базу компаний" in resp.text
     assert "Обогатить профили компаний" in resp.text
     assert "Добавить клиента вручную" in resp.text
+
+
+async def test_events_page_renders_manual_event_controls(db_session):
+    app = create_app()
+
+    async def override_session():
+        yield db_session
+
+    app.dependency_overrides[get_session] = override_session
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get("/events")
+    app.dependency_overrides.clear()
+
+    assert resp.status_code == 200
+    assert "Создать ручное событие" in resp.text
+    assert "Быстрая demo-кампания" in resp.text
+    assert "Подготовить события для реальной базы" in resp.text

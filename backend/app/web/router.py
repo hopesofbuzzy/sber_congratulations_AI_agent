@@ -20,6 +20,10 @@ from app.services.approval import approve_greeting, reject_greeting
 from app.services.company_enrichment import enrich_client_company_by_id, enrich_missing_clients
 from app.services.company_import import import_clients_from_company_csv
 from app.services.feedback import save_feedback
+from app.services.manual_events import (
+    create_manual_event_record,
+    seed_manual_campaign_for_real_clients,
+)
 from app.services.reset_runtime import reset_runtime_data
 
 router = APIRouter()
@@ -293,8 +297,87 @@ async def clients_create(
 
 @router.get("/events", response_class=HTMLResponse)
 async def events_page(request: Request, session: AsyncSession = Depends(get_session)):
-    events = (await session.execute(select(Event).order_by(Event.event_date.asc()))).scalars().all()
-    return templates.TemplateResponse(request, "events.html", {"events": events})
+    qp = request.query_params
+    events = (
+        (
+            await session.execute(
+                select(Event).options(selectinload(Event.client)).order_by(Event.event_date.asc())
+            )
+        )
+        .scalars()
+        .all()
+    )
+    clients = (
+        (
+            await session.execute(
+                select(Client)
+                .where(Client.is_demo.is_(False))
+                .order_by(Client.company_name.asc(), Client.id.asc())
+            )
+        )
+        .scalars()
+        .all()
+    )
+    return templates.TemplateResponse(
+        request,
+        "events.html",
+        {
+            "events": events,
+            "clients": clients,
+            "msg": qp.get("msg", ""),
+            "error": qp.get("error", ""),
+        },
+    )
+
+
+@router.post("/actions/events/manual")
+async def action_create_manual_event(
+    client_id: int = Form(...),
+    title: str = Form(...),
+    event_date: str = Form(...),
+    session: AsyncSession = Depends(get_session),
+):
+    try:
+        date_value = dt.date.fromisoformat(event_date.strip())
+        await create_manual_event_record(
+            session,
+            client_id=client_id,
+            event_date=date_value,
+            title=title,
+            metadata={"source": "web-manual"},
+        )
+        return RedirectResponse(
+            url=f"/events?msg={quote('Ручное событие создано')}",
+            status_code=303,
+        )
+    except Exception as e:
+        return RedirectResponse(url=f"/events?error={quote(str(e))}", status_code=303)
+
+
+@router.post("/actions/events/demo-campaign")
+async def action_create_demo_campaign(
+    title: str = Form("Персональное деловое поздравление"),
+    count: int = Form(5),
+    event_date: str = Form(""),
+    session: AsyncSession = Depends(get_session),
+):
+    try:
+        date_value = (
+            dt.date.fromisoformat(event_date.strip()) if event_date.strip() else dt.date.today()
+        )
+        result = await seed_manual_campaign_for_real_clients(
+            session,
+            event_date=date_value,
+            title=title,
+            limit=max(1, min(int(count), 20)),
+        )
+        msg = (
+            f"Demo-кампания создана: events={result['created']}, "
+            f"duplicates={result['duplicates']}, clients={result['selected_clients']}"
+        )
+        return RedirectResponse(url=f"/events?msg={quote(msg)}", status_code=303)
+    except Exception as e:
+        return RedirectResponse(url=f"/events?error={quote(str(e))}", status_code=303)
 
 
 @router.get("/greetings", response_class=HTMLResponse)

@@ -34,6 +34,19 @@ def _allowed_facts(client: Client) -> dict:
     }
 
 
+def _generation_context(client: Client, event: Event) -> dict:
+    context = _allowed_facts(client)
+    if event.event_type == "manual" and event.details:
+        context.update(
+            {
+                "manual_kind": event.details.get("manual_kind"),
+                "focus_hint": event.details.get("focus_hint"),
+                "event_tone_hint": event.details.get("tone_hint"),
+            }
+        )
+    return context
+
+
 async def generate_subject_body(
     *,
     event: Event,
@@ -52,12 +65,14 @@ async def generate_subject_body(
     provider = get_llm_provider()
     if provider is not None:
         try:
-            facts = _allowed_facts(client)
+            facts = _generation_context(client, event)
             # Extract tone_hint from holiday tags if available
             tone_hint = None
             if event.event_type == "holiday" and event.details:
                 holiday_tags = event.details.get("holiday_tags", {})
                 tone_hint = holiday_tags.get("tone_hint")
+            elif event.event_type == "manual" and event.details:
+                tone_hint = event.details.get("tone_hint")
 
             system = build_system_prompt()
             user = build_user_prompt(
@@ -67,6 +82,7 @@ async def generate_subject_body(
                 segment=client.segment,
                 facts=facts,
                 tone_hint=tone_hint,
+                event_details=event.details or {},
             )
             raw = await provider.generate(system=system, user=user)
             log.debug(
@@ -114,7 +130,7 @@ async def generate_subject_body(
     )
     subject, body = generate_text(
         template_choice,
-        context=_allowed_facts(client),
+        context=_generation_context(client, event),
         title=event.title,
     )
     validate_message_text(subject)

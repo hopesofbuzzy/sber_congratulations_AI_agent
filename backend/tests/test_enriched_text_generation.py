@@ -22,3 +22,27 @@ def test_text_generator_uses_enriched_company_context():
     assert "День финансиста" in subject
     assert 'ЗАО "ТехСтрой"' in body
     assert "Строительство жилых и нежилых зданий" in body
+
+
+def test_text_generator_uses_manual_business_context():
+    choice = choose_template(
+        segment="standard",
+        event_type="manual",
+        title="Желаем сильных продаж и новых клиентов",
+    )
+    subject, body = generate_text(
+        choice,
+        context={
+            "first_name": "Алина",
+            "middle_name": "Сергеевна",
+            "last_name": "Громова",
+            "company_name": 'ООО "Логистика-Профи"',
+            "position": "Операционный директор",
+            "manual_kind": "business_touchpoint",
+            "focus_hint": "sales",
+        },
+        title="Желаем сильных продаж и новых клиентов",
+    )
+    assert "Желаем сильных продаж и новых клиентов" in subject
+    assert "деловое взаимодействие" in body
+    assert "клиентской базы" in body

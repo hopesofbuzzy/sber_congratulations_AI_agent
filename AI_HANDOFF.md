@@ -84,6 +84,7 @@ scripts\run_gigachat_smoke.cmd
   - клиент: `backend/app/agent/gigachat_client.py`
   - провайдеры: `backend/app/agent/gigachat_providers.py`
 - **Детектор событий**: `backend/app/services/event_detector.py`
+- **Ручные сценарии событий**: `backend/app/services/manual_events.py` + страница `backend/app/web/templates/events.html`
 - **Enrichment организаций**: `backend/app/services/company_enrichment.py`, `backend/app/services/company_import.py`, `backend/app/services/dadata_client.py`, `backend/app/resources/company_data/*`
 - **Reset runtime data (для демо)**: `backend/app/services/reset_runtime.py` + кнопка в UI
 - **Отправка (MVP outbox)**: `backend/app/services/sender.py`
@@ -100,6 +101,7 @@ scripts\run_gigachat_smoke.cmd
 
 - **VIP approval flow**: уже реализован базовый вариант: `vip` → `needs_approval`, подтверждение в UI → отправка.
 - **Статистика/аудит**: AgentRun + feedback уже есть, дальше нужны агрегированные метрики по периодам, причины ошибок, повторная отправка, экспорт.
+- **Реальная база клиентов**: теперь есть управляемые ручные события, следующий шаг — улучшить саму генерацию и сценарии под реальные сегменты клиентов.
 - **Реальный enrichment**: расширять поверх уже подключённого `DaData` (кэш, ретраи, лимиты, fallback-стратегии, batch-поток).
 - **Реальные каналы отправки**: SMTP/SMS/мессенджеры.
 
