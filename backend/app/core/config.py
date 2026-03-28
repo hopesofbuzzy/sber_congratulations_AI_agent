@@ -63,7 +63,7 @@ class Settings(BaseSettings):
     gigachat_oauth_url: str = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
     gigachat_base_url: str = "https://gigachat.devices.sberbank.ru/api/v1"
     gigachat_model: str = "GigaChat"
-    gigachat_temperature: float | None = None
+    gigachat_temperature: float | None = 0.1
     # Base timeout для обычных запросов (чат, текст)
     gigachat_timeout_sec: float = 30.0
     # Генерация изображения через chat/completions заметно медленнее обычного текста.

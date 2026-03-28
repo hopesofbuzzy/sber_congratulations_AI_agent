@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime as dt
 
 from app.agent.event_semantics import build_event_semantics
-from app.agent.llm_prompts import build_user_prompt
+from app.agent.llm_prompts import build_system_prompt, build_user_prompt
 
 
 def test_event_semantics_for_business_holiday():
@@ -74,3 +74,5 @@ def test_build_user_prompt_includes_event_semantics_block():
     assert "Категория: business" in prompt
     assert "Смысловой фокус: growth" in prompt
     assert "Предпринимательская энергия" in prompt
+    assert "Ответ должен начинаться с символа {" in build_system_prompt()
+    assert "Переносы между абзацами в body кодируй как \\n\\n" in prompt

@@ -115,12 +115,6 @@ async def send_due_greetings(
 
         try:
             recipient = c.email or c.phone or ""
-            if not recipient:
-                g.status = "error"
-                await session.commit()
-                errors += 1
-                continue
-
             delivery = await send_greeting(session, greeting=g, recipient=recipient, client=c)
             if delivery.status == "sent":
                 g.status = "sent"

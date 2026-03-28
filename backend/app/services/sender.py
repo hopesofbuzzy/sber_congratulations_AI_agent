@@ -93,6 +93,20 @@ def _recipient_domain(email: str) -> str:
     return low.split("@", 1)[1]
 
 
+def _file_fallback_recipient(*, recipient: str, client: Client | None) -> str:
+    resolved = (recipient or "").strip()
+    if resolved:
+        return resolved
+    if client is not None:
+        if getattr(client, "phone", None):
+            return str(client.phone)
+        if getattr(client, "email", None):
+            return str(client.email)
+        if getattr(client, "id", None) is not None:
+            return f"client:{client.id}"
+    return "client:unknown"
+
+
 async def send_greeting(
     session: AsyncSession,
     *,
@@ -119,6 +133,11 @@ async def send_greeting(
     effective_mode = mode
     if effective_mode == "smtp" and client is not None and bool(getattr(client, "is_demo", False)):
         effective_mode = "file"
+    # For demo/presentation runs we can have imported clients without real email addresses.
+    # In SMTP mode this should degrade to file outbox instead of turning the whole flow into "error".
+    if effective_mode == "smtp" and "@" not in (recipient or ""):
+        effective_mode = "file"
+        recipient = _file_fallback_recipient(recipient=recipient, client=client)
 
     # Determine channel (MVP: only email + file)
     channel = "email" if effective_mode == "smtp" else "file"
@@ -145,7 +164,11 @@ async def send_greeting(
         return d
 
     if effective_mode == "file":
-        return await send_greeting_file(session, greeting=greeting, recipient=recipient)
+        return await send_greeting_file(
+            session,
+            greeting=greeting,
+            recipient=_file_fallback_recipient(recipient=recipient, client=client),
+        )
 
     if effective_mode != "smtp":
         # Unknown mode -> safe fallback to file

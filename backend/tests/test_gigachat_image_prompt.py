@@ -15,9 +15,12 @@ def test_gigachat_prompt_avoids_card_word_and_forbids_text():
     low = (system + "\n" + user).lower()
     assert "открытк" not in low
     assert "без текста" in low or "никакого текста" in low
+    assert "без людей" in low
+    assert "шаров" in low or "шары" in low
+    assert "торт" in low
 
 
-def test_gigachat_prompt_uses_semantic_business_context():
+def test_gigachat_prompt_uses_business_still_life_without_birthday_objects():
     system, user = build_illustration_prompt(
         event_type="holiday",
         event_title="День российского предпринимательства",
@@ -36,8 +39,45 @@ def test_gigachat_prompt_uses_semantic_business_context():
     )
     low = (system + "\n" + user).lower()
     assert "открытк" not in low
-    assert "развитие бизнеса" in low
-    assert "город" in low or "развит" in low
+    assert "премиальный деловой натюрморт" in low
+    assert "подарочная коробка" in low
+    assert "торт" not in user.lower()
+    assert "шаров" not in user.lower()
+    assert "без людей" in low
+    assert "без офиса" in low
+
+
+def test_gigachat_prompt_uses_new_year_specific_motif_without_birthday_objects():
+    system, user = build_illustration_prompt(
+        event_type="holiday",
+        event_title="Новый год",
+        recipient_line="Иван Тестов",
+        company="ООО Вектор",
+        event_details={"holiday_tags": {"focus_hint": "renewal", "category": "holiday"}},
+        segment="standard",
+        profession="management",
+    )
+    low = (system + "\n" + user).lower()
+    assert "елов" in low
+    assert "огни" in low
+    assert "торт" not in user.lower()
+    assert "воздуш" not in user.lower()
+
+
+def test_gigachat_prompt_uses_march_8_flowers_without_birthday_objects():
+    system, user = build_illustration_prompt(
+        event_type="holiday",
+        event_title="8 Марта",
+        recipient_line="Ирина Тестова",
+        company="ООО Вектор",
+        event_details={"holiday_tags": {"focus_hint": "care", "category": "holiday"}},
+        segment="standard",
+        profession="management",
+    )
+    low = (system + "\n" + user).lower()
+    assert "цвет" in low
+    assert "торт" not in user.lower()
+    assert "воздуш" not in user.lower()
 
 
 async def test_gigachat_image_provider_uses_image_generation_timeout(monkeypatch):

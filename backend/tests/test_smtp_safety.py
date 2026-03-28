@@ -141,3 +141,49 @@ async def test_smtp_blocks_when_allowlist_empty_by_default(db_session, monkeypat
     d = await send_greeting(db_session, greeting=g, recipient=c.email or "", client=c)
     assert d.status == "skipped"
     assert d.provider_message == "blocked:allowlist-empty"
+
+
+async def test_smtp_without_email_falls_back_to_file_outbox(db_session, monkeypatch, tmp_path):
+    monkeypatch.setattr(settings, "send_mode", "smtp", raising=False)
+    monkeypatch.setattr(settings, "smtp_host", "smtp.example.local", raising=False)
+    monkeypatch.setattr(settings, "smtp_allow_all_recipients", True, raising=False)
+    monkeypatch.setattr(settings, "outbox_dir", str(tmp_path / "outbox"), raising=False)
+
+    c = Client(
+        first_name="Импорт",
+        last_name="Клиент",
+        segment="standard",
+        email=None,
+        phone=None,
+        preferred_channel="email",
+        birth_date=dt.date(1990, 1, 1),
+        is_demo=False,
+    )
+    db_session.add(c)
+    await db_session.commit()
+    await db_session.refresh(c)
+
+    ev = Event(
+        client_id=c.id, event_type="manual", event_date=dt.date.today(), title="Тест", details={}
+    )
+    db_session.add(ev)
+    await db_session.commit()
+    await db_session.refresh(ev)
+
+    g = Greeting(
+        event_id=ev.id,
+        client_id=c.id,
+        tone="warm",
+        subject="Тестовое поздравление",
+        body="Достаточно длинный текст поздравления для прохождения валидации." * 3,
+        image_path=None,
+        status="generated",
+    )
+    db_session.add(g)
+    await db_session.commit()
+    await db_session.refresh(g)
+
+    d = await send_greeting(db_session, greeting=g, recipient="", client=c)
+    assert d.status == "sent"
+    assert d.channel == "file"
+    assert d.recipient == f"client:{c.id}"

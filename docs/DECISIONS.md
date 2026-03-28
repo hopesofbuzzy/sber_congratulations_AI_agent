@@ -155,4 +155,10 @@
 - **Причина**: реальный email-канал не должен выглядеть как “текст + вложение из демо”; для презентации и дальнейшего использования нужен более продуктовый вид письма без отказа от совместимости.
 - **Файлы**: `backend/app/services/email_rendering.py`, `backend/app/services/sender.py`, `backend/tests/test_smtp_email_rendering.py`.
 
+## 24) Demo-stable GigaChat и fallback-доставка
+
+- **Решение**: для текстовой генерации через GigaChat усилен JSON-контракт ответа и снижен `temperature` по умолчанию до более стабильного режима; для image-generation введены event-specific presets (день рождения, Новый год, 8 Марта, business/manual), но сохранены общие запреты на людей и текст. В SMTP-режиме клиенты без пригодного email автоматически переводятся в file-outbox fallback вместо `error`.
+- **Причина**: демо не должно ломаться из-за “почти JSON” ответа модели, а визуальная генерация не должна сводить все праздники к одному и тому же сценарию. Отдельно важно, чтобы импортированные клиенты без реальной почты не валили прогон доставки.
+- **Файлы**: `backend/app/agent/llm_prompts.py`, `backend/app/agent/gigachat_providers.py`, `backend/app/core/config.py`, `backend/app/services/sender.py`, `backend/app/services/due_sender.py`, `backend/tests/test_gigachat_image_prompt.py`, `backend/tests/test_smtp_safety.py`, `backend/tests/test_scheduled_sending.py`.
+
 
