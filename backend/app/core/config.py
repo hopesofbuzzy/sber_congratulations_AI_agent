@@ -66,6 +66,8 @@ class Settings(BaseSettings):
     gigachat_temperature: float | None = None
     # Base timeout для обычных запросов (чат, текст)
     gigachat_timeout_sec: float = 30.0
+    # Генерация изображения через chat/completions заметно медленнее обычного текста.
+    gigachat_image_generation_timeout_sec: float = 120.0
     # Отдельный таймаут для скачивания изображений (обычно дольше, можно поднять для демо)
     gigachat_image_timeout_sec: float = 60.0
 

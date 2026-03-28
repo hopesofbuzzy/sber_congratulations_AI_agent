@@ -108,6 +108,7 @@ class Greeting(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     event_id: Mapped[int] = mapped_column(ForeignKey("events.id"))
     client_id: Mapped[int | None] = mapped_column(ForeignKey("clients.id"), nullable=True)
+    agent_run_id: Mapped[int | None] = mapped_column(ForeignKey("agent_runs.id"), nullable=True)
 
     tone: Mapped[str] = mapped_column(String(50), default="official")
     subject: Mapped[str] = mapped_column(String(250))
@@ -130,6 +131,7 @@ class Greeting(Base):
 
     event: Mapped[Event] = relationship(back_populates="greetings")
     client: Mapped[Client | None] = relationship(back_populates="greetings")
+    agent_run: Mapped["AgentRun"] = relationship(back_populates="greetings")
     deliveries: Mapped[list["Delivery"]] = relationship(back_populates="greeting")
     feedback_entries: Mapped[list["Feedback"]] = relationship(back_populates="greeting")
 
@@ -189,3 +191,4 @@ class AgentRun(Base):
     errors: Mapped[int] = mapped_column(default=0)
 
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    greetings: Mapped[list[Greeting]] = relationship(back_populates="agent_run")

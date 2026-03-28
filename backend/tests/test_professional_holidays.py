@@ -76,3 +76,38 @@ async def test_event_detector_creates_professional_holiday_for_security_on_dec_2
         e.title == "День специалиста по безопасности" and e.event_date == dt.date(2025, 12, 20)
         for e in events
     )
+
+
+async def test_event_detector_creates_builtin_business_holiday_with_structured_tags(db_session):
+    today = dt.date(2026, 5, 25)
+    c = Client(
+        first_name="Олег",
+        middle_name="Викторович",
+        last_name="Смирнов",
+        profession="management",
+        segment="standard",
+        email="demo_client_2@example.com",
+        preferred_channel="email",
+        birth_date=None,
+        is_demo=True,
+    )
+    db_session.add(c)
+    await db_session.commit()
+    await db_session.refresh(c)
+
+    created = await ensure_upcoming_events(db_session, today=today, lookahead_days=2)
+    assert created >= 1
+
+    events = (
+        (
+            await db_session.execute(
+                select(Event).where(Event.client_id == c.id).order_by(Event.event_date.asc())
+            )
+        )
+        .scalars()
+        .all()
+    )
+    entrepreneur_day = next(e for e in events if e.title == "День российского предпринимательства")
+    assert entrepreneur_day.event_date == dt.date(2026, 5, 26)
+    assert entrepreneur_day.details["holiday_tags"]["category"] == "business"
+    assert entrepreneur_day.details["holiday_tags"]["focus_hint"] == "growth"

@@ -11,28 +11,28 @@
     <div class="col-12 col-md-3">
       <div class="surface-panel metric-card">
         <div class="metric-label">Всего запусков</div>
-        <div class="metric-value">{{ runs | length }}</div>
+        <div class="metric-value">{{ total_runs }}</div>
         <div class="metric-hint">Запуски, записанные в AgentRun.</div>
       </div>
     </div>
     <div class="col-12 col-md-3">
       <div class="surface-panel metric-card">
         <div class="metric-label">Успешно</div>
-        <div class="metric-value">{{ runs | selectattr('status', 'equalto', 'success') | list | length }}</div>
+        <div class="metric-value">{{ status_totals.success }}</div>
         <div class="metric-hint">Полностью успешные прогоны без ошибок.</div>
       </div>
     </div>
     <div class="col-12 col-md-3">
       <div class="surface-panel metric-card">
         <div class="metric-label">Частично</div>
-        <div class="metric-value">{{ runs | selectattr('status', 'equalto', 'partial') | list | length }}</div>
+        <div class="metric-value">{{ status_totals.partial }}</div>
         <div class="metric-hint">Прогоны с результатом и частичными ошибками.</div>
       </div>
     </div>
     <div class="col-12 col-md-3">
       <div class="surface-panel metric-card">
         <div class="metric-label">Ошибки</div>
-        <div class="metric-value">{{ runs | selectattr('status', 'equalto', 'error') | list | length }}</div>
+        <div class="metric-value">{{ status_totals.error }}</div>
         <div class="metric-hint">Фатальные прогоны, требующие внимания.</div>
       </div>
     </div>
@@ -66,7 +66,7 @@
         <tbody>
           {% for r in runs %}
             <tr>
-              <td class="fw-semibold">#{{ r.id }}</td>
+              <td class="fw-semibold"><a href="/runs/{{ r.id }}">#{{ r.id }}</a></td>
               <td>
                 {% if r.status == "success" %}
                   <span class="badge text-bg-success">успех</span>

@@ -46,3 +46,28 @@ def test_text_generator_uses_manual_business_context():
     assert "Желаем сильных продаж и новых клиентов" in subject
     assert "деловое взаимодействие" in body
     assert "клиентской базы" in body
+
+
+def test_text_generator_uses_structured_holiday_context():
+    choice = choose_template(
+        segment="standard",
+        event_type="holiday",
+        title="День российского предпринимательства",
+    )
+    subject, body = generate_text(
+        choice,
+        context={
+            "first_name": "Игорь",
+            "middle_name": "Павлович",
+            "last_name": "Романов",
+            "company_name": 'ООО "Вектор"',
+            "position": "Генеральный директор",
+            "holiday_category": "business",
+            "holiday_focus_hint": "growth",
+            "holiday_prompt_hint": "Предпринимательская энергия, развитие бизнеса, новые возможности",
+        },
+        title="День российского предпринимательства",
+    )
+    assert "День российского предпринимательства" in subject
+    assert "устойчивый рост" in body
+    assert "деловые инициативы" in body

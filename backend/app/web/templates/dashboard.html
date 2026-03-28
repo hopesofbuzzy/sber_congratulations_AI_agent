@@ -78,6 +78,95 @@
   </div>
 
   <div class="row g-4 mt-1">
+    <div class="col-12 col-xl-8">
+      <div class="surface-panel h-100">
+        <div class="section-title">Воронка после запуска</div>
+        <div class="section-subtitle mb-4">Показывает, как сгенерированные поздравления проходят через approve, доставку и feedback.</div>
+        <div class="row g-3">
+          <div class="col-12 col-md-6 col-xl-3">
+            <a href="/greetings" class="text-decoration-none text-reset">
+              <div class="surface-card h-100">
+                <div class="card-body">
+                  <div class="metric-label">Сгенерировано</div>
+                  <div class="metric-value">{{ greetings_count }}</div>
+                  <div class="metric-hint">Все greeting-объекты, созданные агентом.</div>
+                </div>
+              </div>
+            </a>
+          </div>
+          <div class="col-12 col-md-6 col-xl-3">
+            <a href="/greetings" class="text-decoration-none text-reset">
+              <div class="surface-card h-100">
+                <div class="card-body">
+                  <div class="metric-label">Ждут согласования</div>
+                  <div class="metric-value">{{ greetings_needing_approval }}</div>
+                  <div class="metric-hint">VIP-поздравления, которые ещё не прошли ручной review.</div>
+                </div>
+              </div>
+            </a>
+          </div>
+          <div class="col-12 col-md-6 col-xl-3">
+            <a href="/deliveries" class="text-decoration-none text-reset">
+              <div class="surface-card h-100">
+                <div class="card-body">
+                  <div class="metric-label">Дошли до доставки</div>
+                  <div class="metric-value">{{ sent_greetings_count }}</div>
+                  <div class="metric-hint">Поздравления, у которых уже есть успешная отправка.</div>
+                </div>
+              </div>
+            </a>
+          </div>
+          <div class="col-12 col-md-6 col-xl-3">
+            <a href="/greetings" class="text-decoration-none text-reset">
+              <div class="surface-card h-100">
+                <div class="card-body">
+                  <div class="metric-label">Есть feedback</div>
+                  <div class="metric-value">{{ greetings_with_feedback_count }}</div>
+                  <div class="metric-hint">Поздравления, по которым менеджер уже дал обратную связь.</div>
+                </div>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-xl-4">
+      <div class="surface-panel h-100">
+        <div class="section-title">Операционное здоровье</div>
+        <div class="section-subtitle mb-4">Короткая сводка качества работы конвейера для демонстрации и контроля.</div>
+        <div class="d-grid gap-3">
+          <div class="d-flex align-items-center justify-content-between">
+            <span class="metric-label mb-0">Успешная доставка</span>
+            <span class="fw-semibold">{{ delivery_success_rate }}%</span>
+          </div>
+          <div class="d-flex align-items-center justify-content-between">
+            <span class="metric-label mb-0">Покрытие feedback</span>
+            <span class="fw-semibold">{{ feedback_coverage_rate }}%</span>
+          </div>
+          <div class="d-flex align-items-center justify-content-between">
+            <span class="metric-label mb-0">Ошибки доставки</span>
+            <span class="fw-semibold {% if delivery_errors_count %}text-danger{% endif %}">{{ delivery_errors_count }}</span>
+          </div>
+          <div class="d-flex align-items-center justify-content-between">
+            <span class="metric-label mb-0">Запуски с проблемами</span>
+            <span class="fw-semibold {% if runs_with_issues_count %}text-warning{% endif %}">{{ runs_with_issues_count }}</span>
+          </div>
+          <div class="d-flex align-items-center justify-content-between">
+            <span class="metric-label mb-0">Средняя оценка</span>
+            <span class="fw-semibold">
+              {% if feedback_avg_score is not none %}
+                {{ feedback_avg_score }}
+              {% else %}
+                нет данных
+              {% endif %}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mt-1">
     <div class="col-12 col-xl-5">
       <div class="surface-panel h-100">
         <div class="section-title">Как показать демо</div>
@@ -145,7 +234,7 @@
             <tbody>
               {% for r in last_runs %}
                 <tr>
-                  <td class="fw-semibold">#{{ r.id }}</td>
+                  <td class="fw-semibold"><a href="/runs/{{ r.id }}">#{{ r.id }}</a></td>
                   <td>
                     {% if r.status == "success" %}
                       <span class="badge text-bg-success">успех</span>

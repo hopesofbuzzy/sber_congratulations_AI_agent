@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import logging
 
+from app.agent.event_semantics import build_event_semantics
 from app.agent.gigachat_client import GigaChatClient, GigaChatError, extract_img_file_id
+from app.core.config import settings
 
 log = logging.getLogger(__name__)
 
@@ -47,6 +49,7 @@ class GigaChatImageProvider:
                 {"role": "user", "content": prompt},
             ],
             function_call="auto",
+            timeout_sec=float(settings.gigachat_image_generation_timeout_sec),
             x_client_id=x_client_id,
         )
         try:
@@ -80,25 +83,15 @@ class GigaChatImageProvider:
         return file_id, jpg
 
 
-def _visual_theme(*, event_type: str, event_title: str) -> str:
-    t = (event_title or "").lower()
-    et = (event_type or "").lower()
-    if et == "birthday" or "день рождения" in t:
-        return (
-            "натюрморт: воздушные шары, праздничный торт со свечами (без надписей), конфетти, "
-            "тёплый свет, атмосфера праздника"
-        )
-    if "новый год" in t or "с наступающим" in t:
-        return "зимний уют: огни гирлянд, ель, подарки (без надписей), снежные огоньки, тёплый интерьер"
-    if "8 марта" in t:
-        return "весенние цветы: тюльпаны/пионы, мягкий свет, чистый фон, без надписей и открыток"
-    if et == "holiday":
-        return "абстрактная праздничная иллюстрация: свет, символы успеха, аккуратный минимализм, без надписей"
-    return "минималистичная деловая иллюстрация: свет, динамика, успех, без надписей"
-
-
 def build_illustration_prompt(
-    *, event_type: str, event_title: str, recipient_line: str, company: str | None
+    *,
+    event_type: str,
+    event_title: str,
+    recipient_line: str,
+    company: str | None,
+    event_details: dict | None = None,
+    segment: str | None = None,
+    profession: str | None = None,
 ) -> tuple[str, str]:
     """Build prompt for a *text-free illustration* (NOT a greeting card).
 
@@ -114,8 +107,20 @@ def build_illustration_prompt(
         "Никаких рамок, макетов, декоративных элементов с текстом.\n"
         "Только чистая иллюстрация/фото без текста.\n"
     )
-    theme = _visual_theme(event_type=event_type, event_title=event_title)
-    # Use direct "Нарисуй" command as per GigaChat docs - simpler and more reliable
-    # Don't include recipient/company in main prompt to keep it simple and direct
-    prompt = f"Нарисуй {theme}."
+    semantics = build_event_semantics(
+        event_type=event_type,
+        event_title=event_title,
+        event_details=event_details or {},
+        segment=segment,
+        profession=profession,
+    )
+    company_hint = (
+        f" Визуально допустим общий деловой контекст компании «{company}», но без логотипов и без текста."
+        if company
+        else ""
+    )
+    prompt = (
+        f"Нарисуй {semantics.visual_theme}. "
+        f"Смысловой акцент: {semantics.prompt_hint}.{company_hint}"
+    )
     return style, prompt

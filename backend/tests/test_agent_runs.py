@@ -5,7 +5,7 @@ import datetime as dt
 from sqlalchemy import select
 
 from app.agent.orchestrator import run_once
-from app.db.models import AgentRun, Client
+from app.db.models import AgentRun, Client, Greeting
 
 
 async def test_agent_run_is_logged(db_session):
@@ -36,3 +36,10 @@ async def test_agent_run_is_logged(db_session):
     assert r.sent_deliveries == summary.sent_deliveries
     assert r.skipped_existing == summary.skipped_existing
     assert r.errors == summary.errors
+
+    greetings = (
+        (await db_session.execute(select(Greeting).where(Greeting.agent_run_id == r.id)))
+        .scalars()
+        .all()
+    )
+    assert len(greetings) == summary.generated_greetings

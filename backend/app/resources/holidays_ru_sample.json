@@ -14,13 +14,27 @@
   {
     "date": "2026-03-08",
     "title": "8 Марта",
-    "tags": { "type": "holiday", "tone_hint": "warm" },
+    "tags": {
+      "type": "holiday",
+      "tone_hint": "warm",
+      "category": "seasonal",
+      "focus_hint": "care",
+      "audience": "all",
+      "prompt_hint": "Тепло, вдохновение, уважение и благодарность"
+    },
     "is_business_relevant": true
   },
   {
     "date": "2026-02-23",
     "title": "23 Февраля",
-    "tags": { "type": "holiday", "tone_hint": "official" },
+    "tags": {
+      "type": "holiday",
+      "tone_hint": "official",
+      "category": "national",
+      "focus_hint": "respect",
+      "audience": "all",
+      "prompt_hint": "Надёжность, сила характера, уверенные решения"
+    },
     "is_business_relevant": true
   }
 ]

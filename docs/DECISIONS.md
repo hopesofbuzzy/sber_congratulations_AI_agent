@@ -90,6 +90,7 @@
 ## 13) Скорость: лимит GigaChat-изображений за прогон
 
 - **Решение**: ограничиваем количество генераций изображений через GigaChat за один `run_once()` (`MAX_GIGACHAT_IMAGES_PER_RUN`, по умолчанию 5). Остальные изображения — быстрый Pillow fallback.
+- **Практическая настройка**: для image-generation используется отдельный `GIGACHAT_IMAGE_GENERATION_TIMEOUT_SEC`, потому что запросы на картинку стабильно медленнее обычного текста.
 - **Причина**: генерация картинок самая медленная и “дорогая” по токенам/времени, особенно при нескольких событиях.
 - **Файлы**: `backend/app/core/config.py`, `backend/app/agent/orchestrator.py`, `backend/env.example`.
 
@@ -123,5 +124,29 @@
 - **Решение**: добавлен управляемый сценарий ручных событий: оператор может создать единичный повод для конкретного клиента или быстро подготовить demo-кампанию для нескольких реальных клиентов из импортированной базы.
 - **Причина**: реальные клиенты не обязаны иметь день рождения или релевантный праздник в окне `LOOKAHEAD_DAYS`, а демонстрация должна позволять запускать генерацию по импортированной базе уже сейчас.
 - **Файлы**: `backend/app/services/manual_events.py`, `backend/app/api/routes/events.py`, `backend/app/web/router.py`, `backend/app/web/templates/events.html`.
+
+## 19) Run-level аудит результатов генерации
+
+- **Решение**: каждое созданное агентом поздравление получает ссылку на `AgentRun`, а в UI появилась детальная страница запуска `/runs/{id}` со списком созданных поздравлений, их статусами, доставками и feedback.
+- **Причина**: для демонстрации и диагностики недостаточно общих счётчиков `AgentRun`; нужно прозрачно показывать, что именно сделал конкретный прогон и каков дальнейший результат по его объектам.
+- **Файлы**: `backend/app/db/models.py`, `backend/app/db/init_db.py`, `backend/app/agent/orchestrator.py`, `backend/app/web/router.py`, `backend/app/web/templates/runs.html`, `backend/app/web/templates/run_detail.html`.
+
+## 20) Post-generation funnel на dashboard
+
+- **Решение**: главная страница считает и показывает операционную воронку `generated -> needs approval -> delivered -> feedback`, а также ключевые health-метрики (`delivery errors`, `runs with issues`, `avg feedback score`).
+- **Причина**: для презентации нужен не только “журнал сущностей”, но и один экран, который быстро объясняет качество работы конвейера после запуска агента.
+- **Файлы**: `backend/app/web/router.py`, `backend/app/web/templates/dashboard.html`, `backend/tests/test_web_ui_pages.py`.
+
+## 21) Holiday knowledge layer для генерации вне ДР
+
+- **Решение**: встроенные календарные и профессиональные поводы вынесены в единый каталог с семантическими тегами (`category`, `focus_hint`, `prompt_hint`, `audience`), а эти теги передаются дальше в fallback и LLM-prompts.
+- **Причина**: одной даты и названия праздника недостаточно, если нужно масштабировать генерацию на разные сценарии, а не только на день рождения.
+- **Файлы**: `backend/app/services/holiday_catalog.py`, `backend/app/services/event_detector.py`, `backend/app/agent/generator.py`, `backend/app/agent/llm_prompts.py`, `backend/app/agent/text_generator.py`.
+
+## 22) Общий semantic-layer для prompt-building
+
+- **Решение**: добавлен единый слой `EventSemantics`, который собирает категорию, смысловой фокус, prompt_hint, guidance для текста и visual_theme для любого события (`birthday`, `holiday`, `manual`) и используется и в текстовой, и в image-генерации.
+- **Причина**: проект не должен эволюционировать через ручное добавление “ещё одного промпта на ещё один праздник”; масштабируемее строить генерацию через семантику повода и структурированные правила.
+- **Файлы**: `backend/app/agent/event_semantics.py`, `backend/app/agent/generator.py`, `backend/app/agent/llm_prompts.py`, `backend/app/agent/text_generator.py`, `backend/app/agent/gigachat_providers.py`.
 
 

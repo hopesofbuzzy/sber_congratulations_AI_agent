@@ -45,6 +45,8 @@ async def _migrate_sqlite(conn) -> None:
             alter_stmts.append("ALTER TABLE greetings ADD COLUMN approved_by VARCHAR(120)")
         if "review_comment" not in existing:
             alter_stmts.append("ALTER TABLE greetings ADD COLUMN review_comment TEXT")
+        if "agent_run_id" not in existing:
+            alter_stmts.append("ALTER TABLE greetings ADD COLUMN agent_run_id INTEGER")
         for stmt in alter_stmts:
             await conn.exec_driver_sql(stmt)
 

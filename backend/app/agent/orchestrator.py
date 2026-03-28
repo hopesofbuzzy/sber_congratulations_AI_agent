@@ -72,6 +72,14 @@ async def run_once(
 
     summary = AgentSummary()
     gigachat_images_used = 0
+    image_provider = None
+    if (
+        settings.image_mode
+        and settings.image_mode.lower() == "gigachat"
+        and settings.gigachat_credentials
+    ):
+        # Reuse one provider per run so image requests share one cached access token.
+        image_provider = GigaChatImageProvider()
 
     # Create AgentRun record early to have audit trail even on failures.
     run = AgentRun(
@@ -158,11 +166,7 @@ async def run_once(
                     ]
                 ).strip()
                 card_path = None
-                if (
-                    settings.image_mode
-                    and settings.image_mode.lower() == "gigachat"
-                    and settings.gigachat_credentials
-                ):
+                if image_provider is not None:
                     if gigachat_images_used >= int(settings.max_gigachat_images_per_run):
                         card_path = None
                     else:
@@ -172,9 +176,11 @@ async def run_once(
                                 event_title=ev.title,
                                 recipient_line=recipient_line,
                                 company=client.company_name,
+                                event_details=ev.details or {},
+                                segment=client.segment,
+                                profession=getattr(client, "profession", None),
                             )
-                            provider = GigaChatImageProvider()
-                            file_id, jpg = await provider.generate_jpg(
+                            file_id, jpg = await image_provider.generate_jpg(
                                 system_style=style,
                                 prompt=prompt,
                                 x_client_id=str(client.id),
@@ -217,6 +223,7 @@ async def run_once(
                 greeting = Greeting(
                     event_id=ev.id,
                     client_id=client.id,
+                    agent_run_id=run_id,
                     tone=tone,
                     subject=subject,
                     body=body,

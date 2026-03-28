@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import datetime as dt
 
+from app.agent.event_semantics import build_event_semantics
+
 
 def build_system_prompt() -> str:
     return (
@@ -42,6 +44,13 @@ def build_user_prompt(
         facts: словарь с фактами о клиенте
         tone_hint: подсказка тона из holiday_tags (official|warm), если есть
     """
+    semantics = build_event_semantics(
+        event_type=event_type,
+        event_title=event_title,
+        event_details=event_details or {},
+        segment=segment,
+        profession=(facts or {}).get("profession"),
+    )
     # Определяем рекомендацию по тону
     tone_guidance = ""
     if tone_hint:
@@ -79,6 +88,26 @@ def build_user_prompt(
             "- Если есть official_company_name или okved_name: используй их как источник более точной отраслевой персонализации.\n"
             "- Для каждого праздника найди уникальный угол: что он значит для бизнеса/личности.\n"
         )
+        if event_type.lower() == "holiday":
+            details = event_details or {}
+            holiday_tags = details.get("holiday_tags", {}) or {}
+            category = holiday_tags.get("category")
+            focus_hint = holiday_tags.get("focus_hint")
+            prompt_hint = holiday_tags.get("prompt_hint")
+            audience = holiday_tags.get("audience")
+            holiday_lines = ["ДОПОЛНИТЕЛЬНЫЙ КОНТЕКСТ для holiday-события:\n"]
+            if category:
+                holiday_lines.append(f"- Категория праздника: {category}.\n")
+            if audience:
+                holiday_lines.append(f"- Аудитория повода: {audience}.\n")
+            if focus_hint:
+                holiday_lines.append(f"- Смысловой фокус пожеланий: {focus_hint}.\n")
+            if prompt_hint:
+                holiday_lines.append(f"- Семантика повода: {prompt_hint}.\n")
+            holiday_lines.append(
+                "- В тексте должна чувствоваться именно природа этого праздника, а не универсальный шаблон для любого случая.\n"
+            )
+            personalization_guidance += "".join(holiday_lines)
         if event_type.lower() == "manual":
             details = event_details or {}
             manual_kind = details.get("manual_kind")
@@ -108,6 +137,11 @@ def build_user_prompt(
         f"- Дата: {event_date.isoformat()}\n",
         f"- Сегмент клиента: {segment}\n",
         f"- {tone_guidance}\n\n",
+        "СЕМАНТИКА ПОВОДА:\n",
+        f"- Категория: {semantics.category}\n",
+        f"- Смысловой фокус: {semantics.focus_hint}\n",
+        f"- Семантическая подсказка: {semantics.prompt_hint}\n",
+        f"- Guidance для текста: {semantics.greeting_guidance}\n\n",
         personalization_guidance,
         "\nТРЕБОВАНИЯ к тексту (ОБЯЗАТЕЛЬНО соблюдай):\n",
         "- subject: 6..80 символов, привлекательный заголовок с упоминанием праздника\n",

@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime as dt
 import logging
 
+from app.agent.event_semantics import build_event_semantics
 from app.agent.llm_prompts import build_system_prompt, build_user_prompt
 from app.agent.llm_provider import LLMProviderError, get_llm_provider, parse_llm_json
 from app.agent.text_generator import generate_text
@@ -36,6 +37,32 @@ def _allowed_facts(client: Client) -> dict:
 
 def _generation_context(client: Client, event: Event) -> dict:
     context = _allowed_facts(client)
+    semantics = build_event_semantics(
+        event_type=event.event_type,
+        event_title=event.title,
+        event_details=event.details or {},
+        segment=client.segment,
+        profession=getattr(client, "profession", None),
+    )
+    context.update(
+        {
+            "event_semantic_category": semantics.category,
+            "event_semantic_focus": semantics.focus_hint,
+            "event_prompt_hint": semantics.prompt_hint,
+            "event_greeting_guidance": semantics.greeting_guidance,
+            "event_visual_theme": semantics.visual_theme,
+        }
+    )
+    if event.event_type == "holiday" and event.details:
+        holiday_tags = event.details.get("holiday_tags", {}) or {}
+        context.update(
+            {
+                "holiday_category": holiday_tags.get("category"),
+                "holiday_focus_hint": holiday_tags.get("focus_hint"),
+                "holiday_prompt_hint": holiday_tags.get("prompt_hint"),
+                "holiday_audience": holiday_tags.get("audience"),
+            }
+        )
     if event.event_type == "manual" and event.details:
         context.update(
             {

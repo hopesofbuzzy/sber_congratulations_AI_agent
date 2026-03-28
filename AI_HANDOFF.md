@@ -79,11 +79,13 @@ scripts\run_gigachat_smoke.cmd
 - **БД модели**: `backend/app/db/models.py`
 - **Агент (оркестратор)**: `backend/app/agent/orchestrator.py`
 - **Генерация текста (общая)**: `backend/app/agent/generator.py`
+- **Семантика поводов / prompt-building**: `backend/app/agent/event_semantics.py`
 - **LLM провайдеры**: `backend/app/agent/llm_provider.py`
 - **GigaChat**:
   - клиент: `backend/app/agent/gigachat_client.py`
   - провайдеры: `backend/app/agent/gigachat_providers.py`
 - **Детектор событий**: `backend/app/services/event_detector.py`
+- **Каталог праздников/проф-поводов**: `backend/app/services/holiday_catalog.py`
 - **Ручные сценарии событий**: `backend/app/services/manual_events.py` + страница `backend/app/web/templates/events.html`
 - **Enrichment организаций**: `backend/app/services/company_enrichment.py`, `backend/app/services/company_import.py`, `backend/app/services/dadata_client.py`, `backend/app/resources/company_data/*`
 - **Reset runtime data (для демо)**: `backend/app/services/reset_runtime.py` + кнопка в UI
@@ -91,7 +93,7 @@ scripts\run_gigachat_smoke.cmd
 - **Guardrails**: `backend/app/services/guardrails.py`
 - **Feedback loop**: `backend/app/services/feedback.py` + `backend/app/api/routes/feedback.py`
 - **Планировщик**: `backend/app/worker/run_scheduler.py`
-- **Аудит запусков (AgentRun)**: `backend/app/db/models.py` (AgentRun), запись в `backend/app/agent/orchestrator.py`, UI: `/runs`
+- **Аудит запусков (AgentRun)**: `backend/app/db/models.py` (AgentRun), запись в `backend/app/agent/orchestrator.py`, UI: `/runs` и `/runs/{id}`
 
 ## Что уже “принято” как решения
 
@@ -100,8 +102,10 @@ scripts\run_gigachat_smoke.cmd
 ## Следующие крупные задачи (после текущего MVP+)
 
 - **VIP approval flow**: уже реализован базовый вариант: `vip` → `needs_approval`, подтверждение в UI → отправка.
-- **Статистика/аудит**: AgentRun + feedback уже есть, дальше нужны агрегированные метрики по периодам, причины ошибок, повторная отправка, экспорт.
-- **Реальная база клиентов**: теперь есть управляемые ручные события, следующий шаг — улучшить саму генерацию и сценарии под реальные сегменты клиентов.
+- **Статистика/аудит**: dashboard уже показывает funnel после запуска и run-level аудит; дальше нужны агрегированные метрики по периодам, причины ошибок, повторная отправка, экспорт.
+- **Реальная база клиентов**: ручные события и demo-кампании уже дают управляемый вход в генерацию; дальше можно усиливать сегментацию, пресеты кампаний и пост-анализ результатов.
+- **Генерация не только для ДР**: базовый holiday knowledge layer уже появился; следующий шаг после него — ещё более точная генерация текста/картинки под широкий набор поводов и автоматическая сборка richer prompt-chain.
+- **Prompt-chain**: первый общий semantic-layer уже добавлен; дальше можно наращивать richness prompt-builder без ручного описания каждого частного случая.
 - **Реальный enrichment**: расширять поверх уже подключённого `DaData` (кэш, ретраи, лимиты, fallback-стратегии, batch-поток).
 - **Реальные каналы отправки**: SMTP/SMS/мессенджеры.
 

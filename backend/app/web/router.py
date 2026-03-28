@@ -5,7 +5,7 @@ import re
 from pathlib import Path
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import func, select
@@ -55,6 +55,36 @@ async def dashboard(request: Request, session: AsyncSession = Depends(get_sessio
     greetings_count = (await session.execute(select(func.count(Greeting.id)))).scalar_one()
     deliveries_count = (await session.execute(select(func.count(Delivery.id)))).scalar_one()
     feedback_count = (await session.execute(select(func.count(Feedback.id)))).scalar_one()
+    greetings_needing_approval = (
+        await session.execute(
+            select(func.count(Greeting.id)).where(Greeting.status == "needs_approval")
+        )
+    ).scalar_one()
+    sent_greetings_count = (
+        await session.execute(
+            select(func.count(func.distinct(Delivery.greeting_id))).where(Delivery.status == "sent")
+        )
+    ).scalar_one()
+    delivery_errors_count = (
+        await session.execute(select(func.count(Delivery.id)).where(Delivery.status == "error"))
+    ).scalar_one()
+    greetings_with_feedback_count = (
+        await session.execute(select(func.count(func.distinct(Feedback.greeting_id))))
+    ).scalar_one()
+    feedback_avg_score = (
+        await session.execute(select(func.avg(Feedback.score)).where(Feedback.score.is_not(None)))
+    ).scalar()
+    runs_with_issues_count = (
+        await session.execute(
+            select(func.count(AgentRun.id)).where(AgentRun.status.in_(("partial", "error")))
+        )
+    ).scalar_one()
+    delivery_success_rate = (
+        round((sent_greetings_count / greetings_count) * 100) if greetings_count else 0
+    )
+    feedback_coverage_rate = (
+        round((greetings_with_feedback_count / greetings_count) * 100) if greetings_count else 0
+    )
     last_runs = (
         (await session.execute(select(AgentRun).order_by(AgentRun.id.desc()).limit(10)))
         .scalars()
@@ -72,6 +102,16 @@ async def dashboard(request: Request, session: AsyncSession = Depends(get_sessio
             "greetings_count": greetings_count,
             "deliveries_count": deliveries_count,
             "feedback_count": feedback_count,
+            "greetings_needing_approval": greetings_needing_approval,
+            "sent_greetings_count": sent_greetings_count,
+            "delivery_errors_count": delivery_errors_count,
+            "greetings_with_feedback_count": greetings_with_feedback_count,
+            "feedback_avg_score": (
+                round(float(feedback_avg_score or 0), 1) if feedback_avg_score is not None else None
+            ),
+            "runs_with_issues_count": runs_with_issues_count,
+            "delivery_success_rate": delivery_success_rate,
+            "feedback_coverage_rate": feedback_coverage_rate,
             "last_runs": last_runs,
         },
     )
@@ -477,4 +517,71 @@ async def runs_page(request: Request, session: AsyncSession = Depends(get_sessio
         .scalars()
         .all()
     )
-    return templates.TemplateResponse(request, "runs.html", {"runs": runs})
+    total_runs = (await session.execute(select(func.count(AgentRun.id)))).scalar_one()
+    grouped_statuses = (
+        await session.execute(
+            select(AgentRun.status, func.count(AgentRun.id)).group_by(AgentRun.status)
+        )
+    ).all()
+    status_totals = {"success": 0, "partial": 0, "error": 0, "running": 0}
+    for status, count in grouped_statuses:
+        status_totals[status] = count
+    return templates.TemplateResponse(
+        request,
+        "runs.html",
+        {"runs": runs, "total_runs": total_runs, "status_totals": status_totals},
+    )
+
+
+@router.get("/runs/{run_id}", response_class=HTMLResponse)
+async def run_detail_page(
+    run_id: int,
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+):
+    run = (
+        await session.execute(select(AgentRun).where(AgentRun.id == run_id))
+    ).scalar_one_or_none()
+    if run is None:
+        raise HTTPException(status_code=404, detail="Запуск агента не найден.")
+
+    greetings = (
+        (
+            await session.execute(
+                select(Greeting)
+                .where(Greeting.agent_run_id == run_id)
+                .options(
+                    selectinload(Greeting.client),
+                    selectinload(Greeting.event),
+                    selectinload(Greeting.deliveries),
+                    selectinload(Greeting.feedback_entries),
+                )
+                .order_by(Greeting.id.desc())
+            )
+        )
+        .scalars()
+        .all()
+    )
+    actual_deliveries = sum(len(greeting.deliveries) for greeting in greetings)
+    actual_sent = sum(
+        1
+        for greeting in greetings
+        for delivery in greeting.deliveries
+        if (delivery.status or "").lower() == "sent"
+    )
+    greetings_with_feedback = sum(1 for greeting in greetings if greeting.feedback_entries)
+    greetings_needing_approval = sum(
+        1 for greeting in greetings if (greeting.status or "").lower() == "needs_approval"
+    )
+    return templates.TemplateResponse(
+        request,
+        "run_detail.html",
+        {
+            "run": run,
+            "greetings": greetings,
+            "actual_deliveries": actual_deliveries,
+            "actual_sent": actual_sent,
+            "greetings_with_feedback": greetings_with_feedback,
+            "greetings_needing_approval": greetings_needing_approval,
+        },
+    )
