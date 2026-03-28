@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import datetime as dt
 import hashlib
-import mimetypes
 import smtplib
-from email.message import EmailMessage
 from pathlib import Path
 
 from sqlalchemy import select
@@ -12,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.db.models import Client, Delivery, Greeting
+from app.services.email_rendering import build_smtp_message
 
 
 def _idempotency_key(*, greeting_id: int, channel: str, recipient: str) -> str:
@@ -243,23 +242,7 @@ async def send_greeting(
         return d
 
     from_email = settings.smtp_from_email or settings.smtp_username or "no-reply@example.com"
-
-    msg = EmailMessage()
-    msg["From"] = from_email
-    msg["To"] = recipient
-    msg["Subject"] = greeting.subject
-    msg.set_content(greeting.body)
-
-    # Attach image if available
-    if greeting.image_path:
-        cards_dir = Path(__file__).resolve().parents[2] / "data"
-        p = cards_dir / greeting.image_path
-        if p.exists() and p.is_file():
-            ctype, _ = mimetypes.guess_type(str(p))
-            maintype, subtype = ("application", "octet-stream")
-            if ctype and "/" in ctype:
-                maintype, subtype = ctype.split("/", 1)
-            msg.add_attachment(p.read_bytes(), maintype=maintype, subtype=subtype, filename=p.name)
+    msg = build_smtp_message(greeting=greeting, recipient=recipient, from_email=from_email)
 
     try:
         if settings.smtp_ssl:

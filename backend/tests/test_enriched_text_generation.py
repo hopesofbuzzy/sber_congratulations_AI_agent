@@ -71,3 +71,23 @@ def test_text_generator_uses_structured_holiday_context():
     assert "День российского предпринимательства" in subject
     assert "устойчивый рост" in body
     assert "деловые инициативы" in body
+
+
+def test_text_generator_uses_female_respectful_greeting_without_surname():
+    choice = choose_template(
+        segment="vip",
+        event_type="holiday",
+        title="День финансиста",
+    )
+    subject, body = generate_text(
+        choice,
+        context={
+            "first_name": "Ирина",
+            "middle_name": "Владимировна",
+            "last_name": "Соколова",
+            "respectful_greeting": "Уважаемая Ирина Владимировна",
+        },
+        title="День финансиста",
+    )
+    assert body.startswith("Уважаемая Ирина Владимировна")
+    assert "Соколова" not in body.split("\n\n", 1)[0]

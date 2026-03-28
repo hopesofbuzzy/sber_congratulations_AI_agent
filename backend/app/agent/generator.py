@@ -3,6 +3,12 @@ from __future__ import annotations
 import datetime as dt
 import logging
 
+from app.agent.addressing import (
+    build_formal_name,
+    build_respectful_greeting,
+    infer_gender_hint,
+    normalize_generated_salutation,
+)
 from app.agent.event_semantics import build_event_semantics
 from app.agent.llm_prompts import build_system_prompt, build_user_prompt
 from app.agent.llm_provider import LLMProviderError, get_llm_provider, parse_llm_json
@@ -30,6 +36,18 @@ def _allowed_facts(client: Client) -> dict:
         "okved_code": getattr(client, "okved_code", None),
         "okved_name": getattr(client, "okved_name", None),
         "company_site": getattr(client, "company_site", None),
+        "formal_name": build_formal_name(
+            first_name=client.first_name,
+            middle_name=getattr(client, "middle_name", None),
+        ),
+        "respectful_greeting": build_respectful_greeting(
+            first_name=client.first_name,
+            middle_name=getattr(client, "middle_name", None),
+        ),
+        "gender_hint": infer_gender_hint(
+            first_name=client.first_name,
+            middle_name=getattr(client, "middle_name", None),
+        ),
         # We intentionally do not pass last_interaction_summary to the model to avoid leaking topics/details.
         # Note: we deliberately do not pass email/phone to the LLM.
     }
@@ -128,8 +146,9 @@ async def generate_subject_body(
                     f"(minimum required: 450, target: 600-900)"
                 )
 
+            normalized_body = normalize_generated_salutation(parsed.body, client=client)
             validate_message_text(parsed.subject)
-            validate_message_text(parsed.body)
+            validate_message_text(normalized_body)
 
             log.debug(
                 "LLM generated greeting for event=%s client=%s: tone=%s subject_len=%d body_len=%d",
@@ -139,7 +158,7 @@ async def generate_subject_body(
                 len(parsed.subject),
                 len(parsed.body),
             )
-            return parsed.tone, parsed.subject, parsed.body
+            return parsed.tone, parsed.subject, normalized_body
         except Exception as e:
             # Log the error for debugging, then fallback to templates
             log.warning(
@@ -160,6 +179,7 @@ async def generate_subject_body(
         context=_generation_context(client, event),
         title=event.title,
     )
+    normalized_body = normalize_generated_salutation(body, client=client)
     validate_message_text(subject)
-    validate_message_text(body)
-    return template_choice.tone, subject, body
+    validate_message_text(normalized_body)
+    return template_choice.tone, subject, normalized_body
