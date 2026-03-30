@@ -4,11 +4,30 @@
 
 ## Роли (условно 5 участников)
 
-1. **Backend/DB инженер** — API, модели данных, миграции, бизнес-логика статусов.
-2. **AI/Agent инженер** — оркестратор, шаблоны/тон, провайдеры LLM, guardrails, идемпотентность генерации.
-3. **Web/UX инженер** — веб-интерфейс, сценарии ручного управления, таблицы/фильтры/статусы.
-4. **Data/Enrichment инженер** — календарь праздников, справочники, обогащение по ИНН (ОКВЭД/руководитель), кэш.
-5. **DevOps/QA инженер** — локальный запуск, CI, тесты, наблюдаемость, документация, контроль качества.
+1. **Backend/DB инженер** — модели данных, API, статусы, доставка, approve-flow, миграции и серверная связность сущностей.
+2. **AI/Agent инженер** — оркестратор, prompt-building, fallback-логика, GigaChat text/image, semantic-layer и guardrails.
+3. **Web/UX инженер** — страницы, формы, dashboard, run-audit, operator-flow и presentation-ready UX.
+4. **Data/Enrichment инженер** — CSV-импорт, `DaData`, knowledge layer праздников и ручных поводов, нормализация и бизнес-контекст клиента.
+5. **DevOps/QA инженер** — тесты, CI, документация, конфигурация окружения, demo-stability и release hygiene.
+
+### Как делить проект сейчас
+
+Это уже не абстрактные роли “на будущее”, а практическое деление проекта по подсистемам:
+
+1. **Backend/DB инженер**
+   - Основные зоны: `backend/app/db/*`, `backend/app/api/*`, `backend/app/services/sender.py`, `backend/app/services/due_sender.py`, `backend/app/services/approval.py`.
+2. **AI/Agent инженер**
+   - Основные зоны: `backend/app/agent/*`.
+3. **Web/UX инженер**
+   - Основные зоны: `backend/app/web/*`.
+4. **Data/Enrichment инженер**
+   - Основные зоны: `backend/app/services/company_*`, `backend/app/services/dadata_client.py`, `backend/app/services/holiday_catalog.py`, `backend/app/services/event_detector.py`, `backend/app/services/manual_events.py`, `backend/app/resources/*`.
+5. **DevOps/QA инженер**
+   - Основные зоны: `backend/tests/*`, `.github/workflows/*`, `README.md`, `docs/*`, `backend/env.example`.
+
+Главный принцип: роли делятся не по “любым задачам”, а по подсистемам и файлам.  
+Подробная рабочая схема совместной разработки описана в `docs/TEAM_WORKFLOW.md`.
+Готовый стартовый набор `Issues` для GitHub подготовлен в `docs/ISSUES_BOOTSTRAP.md`.
 
 ## Что уже можно показывать на презентации
 
