@@ -105,6 +105,7 @@ class GigaChatClient:
         model: str | None = None,
         temperature: float | None = None,
         function_call: str | None = None,
+        timeout_sec: float | None = None,
         x_client_id: str | None = None,
         x_request_id: str | None = None,
         x_session_id: str | None = None,
@@ -133,7 +134,10 @@ class GigaChatClient:
             payload["function_call"] = function_call
 
         async with httpx.AsyncClient(
-            timeout=float(settings.gigachat_timeout_sec), verify=_ssl_verify_param()
+            timeout=float(
+                timeout_sec if timeout_sec is not None else settings.gigachat_timeout_sec
+            ),
+            verify=_ssl_verify_param(),
         ) as c:
             r = await c.post(url, headers=headers, json=payload)
             r.raise_for_status()

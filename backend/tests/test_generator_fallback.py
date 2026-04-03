@@ -91,3 +91,45 @@ async def test_generator_uses_llm_when_valid(monkeypatch):
     assert subject == "Поздравляем, Иван!"
     assert "Команда Сбер" in body
     assert len(body) >= 450  # Verify that body meets minimum length requirement
+
+
+async def test_generator_normalizes_surname_and_female_salutation(monkeypatch):
+    long_body = (
+        "Уважаемый Ирина Владимировна Соколова, поздравляем вас с праздником! "
+        "Желаем уверенных решений, устойчивого развития и новых профессиональных результатов. "
+        "Пусть этот период принесёт вдохновение, поддержку команды и больше сильных возможностей для движения вперёд. "
+        "Мы ценим сотрудничество и надеемся на дальнейшее плодотворное взаимодействие. "
+        "Пусть каждый новый этап приносит гармонию, стабильность и хорошие результаты. "
+        "Желаем вам реализации всех планов и уверенного развития.\\n\\n"
+        "Спасибо, что остаётесь с нами.\\n\\n"
+        "С уважением, Команда Сбер"
+    )
+    monkeypatch.setattr(
+        "app.agent.generator.get_llm_provider",
+        lambda: FakeLLM(f'{{"tone":"official","subject":"Поздравление","body":"{long_body}"}}'),
+    )
+
+    today = dt.date.today()
+    c = Client(
+        first_name="Ирина",
+        middle_name="Владимировна",
+        last_name="Соколова",
+        segment="vip",
+        email="irina@example.com",
+        preferred_channel="email",
+        birth_date=dt.date(1990, 1, 1),
+    )
+    ev = Event(
+        client_id=1,
+        event_type="holiday",
+        event_date=today,
+        title="День финансиста",
+        details={},
+    )
+    choice = choose_template(segment=c.segment, event_type=ev.event_type, title=ev.title)
+
+    _, _, body = await generate_subject_body(
+        event=ev, client=c, template_choice=choice, today=today
+    )
+    assert body.startswith("Уважаемая Ирина Владимировна")
+    assert "Соколова" not in body.split(",", 1)[0]

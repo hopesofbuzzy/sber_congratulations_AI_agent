@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models import Event
 from app.db.session import get_session
 from app.schemas.events import EventOut, ManualEventCreate
+from app.services.manual_events import create_manual_event_record
 
 router = APIRouter(prefix="/events")
 
@@ -20,14 +21,10 @@ async def list_events(session: AsyncSession = Depends(get_session)) -> list[Even
 async def create_manual_event(
     payload: ManualEventCreate, session: AsyncSession = Depends(get_session)
 ) -> Event:
-    ev = Event(
+    return await create_manual_event_record(
+        session,
         client_id=payload.client_id,
-        event_type="manual",
         event_date=payload.event_date,
         title=payload.title,
-        details=payload.metadata,
+        metadata=payload.metadata,
     )
-    session.add(ev)
-    await session.commit()
-    await session.refresh(ev)
-    return ev

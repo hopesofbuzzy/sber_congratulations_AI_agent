@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import datetime as dt
 
+from app.agent.event_semantics import build_event_semantics
+
 
 def build_system_prompt() -> str:
     return (
@@ -11,12 +13,19 @@ def build_system_prompt() -> str:
         "КРИТИЧЕСКИ ВАЖНЫЕ ПРАВИЛА:\n"
         "- Используй ТОЛЬКО факты из блока FACTS (не выдумывай детали о компании, достижениях, проектах, истории сотрудничества).\n"
         "- Имя/отчество: используй только то, что есть в FACTS. Если отчество пустое/отсутствует — НЕ придумывай его.\n"
+        "- В обращении НЕ используй фамилию клиента. Для нормального делового обращения используй имя + отчество, если отчество известно.\n"
+        "- Если gender_hint=female, используй форму «Уважаемая ...», если gender_hint=male — «Уважаемый ...».\n"
+        "- Если есть official_company_name / okved_name / ceo_name / company_site — используй их аккуратно и только по делу.\n"
+        "- Никогда не придумывай ИНН, ОКВЭД, руководство компании или отрасль, если эти поля не переданы.\n"
         "- Не добавляй и не запрашивай чувствительные данные (паспорт, номера карт, PIN/CVV и т.п.).\n"
         "- Тон: деловой/тёплый в зависимости от сегмента клиента и типа праздника, без фамильярности, без политических/спорных тем.\n"
         "- Не упоминай тему/вид последнего взаимодействия с клиентом; используй только общую благодарность за сотрудничество.\n"
         "- Каждое поздравление должно быть УНИКАЛЬНЫМ — избегай шаблонных фраз и одинаковых начал.\n"
         "- Проверь грамматику, пунктуацию и согласование в русском языке.\n"
         "- Выводи РОВНО JSON без markdown и без лишнего текста.\n"
+        "- Ответ должен начинаться с символа { и заканчиваться символом }.\n"
+        "- В поле body используй escaped-переносы \\n\\n внутри JSON-строки, а НЕ реальные переводы строк внутри кавычек.\n"
+        "- Не добавляй пояснения до или после JSON.\n"
     )
 
 
@@ -28,6 +37,7 @@ def build_user_prompt(
     segment: str,
     facts: dict,
     tone_hint: str | None = None,
+    event_details: dict | None = None,
 ) -> str:
     """Build user prompt for greeting generation.
 
@@ -39,6 +49,13 @@ def build_user_prompt(
         facts: словарь с фактами о клиенте
         tone_hint: подсказка тона из holiday_tags (official|warm), если есть
     """
+    semantics = build_event_semantics(
+        event_type=event_type,
+        event_title=event_title,
+        event_details=event_details or {},
+        segment=segment,
+        profession=(facts or {}).get("profession"),
+    )
     # Определяем рекомендацию по тону
     tone_guidance = ""
     if tone_hint:
@@ -59,9 +76,11 @@ def build_user_prompt(
         personalization_guidance = (
             "ПЕРСОНАЛИЗАЦИЯ для дня рождения:\n"
             "- Используй имя и отчество ТОЛЬКО если отчество дано в FACTS (middle_name).\n"
-            "- Если middle_name пустое/отсутствует: обращайся по имени (или имя+фамилия для official), но НЕ выдумывай отчество.\n"
+            "- Если middle_name пустое/отсутствует: обращайся по имени, но НЕ используй фамилию в конце обращения и НЕ выдумывай отчество.\n"
+            "- В официальном обращении ориентируйся на `respectful_greeting`, если оно передано в FACTS.\n"
             "- Если известна компания: упомяни успехи в работе, но БЕЗ конкретных проектов/цифр.\n"
             "- Если известна должность: свяжи пожелания с профессиональным развитием, но БЕЗ выдуманных деталей.\n"
+            "- Если известен okved_name: можно аккуратно связать пожелание с отраслью, без канцелярита и без узкоспециальных деталей.\n"
             "- Добавь пожелания, которые подходят именно этому человеку (здоровье, успех в делах, гармония).\n"
         )
     else:
@@ -72,8 +91,47 @@ def build_user_prompt(
             "- Используй имя клиента естественно, не перегружая.\n"
             "- Если известна компания: свяжи пожелания с бизнес-контекстом, но БЕЗ конкретных проектов.\n"
             "- Если известна должность: учитывай профессиональную роль, но БЕЗ выдуманных достижений.\n"
+            "- Если есть official_company_name или okved_name: используй их как источник более точной отраслевой персонализации.\n"
             "- Для каждого праздника найди уникальный угол: что он значит для бизнеса/личности.\n"
+            "- В прямом обращении не ставь фамилию после имени или имени-отчества.\n"
         )
+        if event_type.lower() == "holiday":
+            details = event_details or {}
+            holiday_tags = details.get("holiday_tags", {}) or {}
+            category = holiday_tags.get("category")
+            focus_hint = holiday_tags.get("focus_hint")
+            prompt_hint = holiday_tags.get("prompt_hint")
+            audience = holiday_tags.get("audience")
+            holiday_lines = ["ДОПОЛНИТЕЛЬНЫЙ КОНТЕКСТ для holiday-события:\n"]
+            if category:
+                holiday_lines.append(f"- Категория праздника: {category}.\n")
+            if audience:
+                holiday_lines.append(f"- Аудитория повода: {audience}.\n")
+            if focus_hint:
+                holiday_lines.append(f"- Смысловой фокус пожеланий: {focus_hint}.\n")
+            if prompt_hint:
+                holiday_lines.append(f"- Семантика повода: {prompt_hint}.\n")
+            holiday_lines.append(
+                "- В тексте должна чувствоваться именно природа этого праздника, а не универсальный шаблон для любого случая.\n"
+            )
+            personalization_guidance += "".join(holiday_lines)
+        if event_type.lower() == "manual":
+            details = event_details or {}
+            manual_kind = details.get("manual_kind")
+            focus_hint = details.get("focus_hint")
+            manual_lines = [
+                "ДОПОЛНИТЕЛЬНЫЙ КОНТЕКСТ для manual-события:\n",
+                "- Это управляемый деловой повод, а не календарный праздник.\n",
+                "- Делай акцент на уважении, партнёрстве, развитии бизнеса и роли клиента.\n",
+            ]
+            if manual_kind:
+                manual_lines.append(f"- Тип делового сценария: {manual_kind}.\n")
+            if focus_hint:
+                manual_lines.append(f"- Бизнес-фокус сценария: {focus_hint}.\n")
+            manual_lines.append(
+                "- Не придумывай достижения, цифры, сделки или конкретные совместные проекты, если их нет в FACTS.\n"
+            )
+            personalization_guidance += "".join(manual_lines)
 
     # Строим промпт
     prompt_parts = [
@@ -86,6 +144,11 @@ def build_user_prompt(
         f"- Дата: {event_date.isoformat()}\n",
         f"- Сегмент клиента: {segment}\n",
         f"- {tone_guidance}\n\n",
+        "СЕМАНТИКА ПОВОДА:\n",
+        f"- Категория: {semantics.category}\n",
+        f"- Смысловой фокус: {semantics.focus_hint}\n",
+        f"- Семантическая подсказка: {semantics.prompt_hint}\n",
+        f"- Guidance для текста: {semantics.greeting_guidance}\n\n",
         personalization_guidance,
         "\nТРЕБОВАНИЯ к тексту (ОБЯЗАТЕЛЬНО соблюдай):\n",
         "- subject: 6..80 символов, привлекательный заголовок с упоминанием праздника\n",
@@ -99,6 +162,10 @@ def build_user_prompt(
         "- ЕСТЕСТВЕННОСТЬ: текст должен звучать как написанный человеком, не как шаблон\n",
         "- РЕЛЕВАНТНОСТЬ: адаптируй поздравление под конкретный праздник (Новый год, 8 Марта, день рождения и т.д.)\n",
         "- НЕ упоминай: 'ИИ', 'модель', 'промпт', внутренние процессы, конкретные банковские продукты\n\n",
+        "ФОРМАТ ОТВЕТА:\n",
+        "- Верни ОДИН JSON-объект и ничего больше.\n",
+        "- Переносы между абзацами в body кодируй как \\n\\n, а не как реальные новые строки внутри JSON.\n",
+        "- Не используй markdown-блоки ```json.\n\n",
         "OUTPUT JSON schema:\n",
         "{\n",
         '  "tone": "official|warm",\n',

@@ -1,7 +1,7 @@
 # DECISIONS (ADR-lite)
 
 Короткий список ключевых архитектурных решений и причин.  
-Нужен, чтобы новый чат/участник команды быстро понял “почему так”.
+Нужен, чтобы новый участник команды быстро понял “почему так”.
 
 ## 1) Офлайн по умолчанию
 
@@ -90,7 +90,75 @@
 ## 13) Скорость: лимит GigaChat-изображений за прогон
 
 - **Решение**: ограничиваем количество генераций изображений через GigaChat за один `run_once()` (`MAX_GIGACHAT_IMAGES_PER_RUN`, по умолчанию 5). Остальные изображения — быстрый Pillow fallback.
+- **Практическая настройка**: для image-generation используется отдельный `GIGACHAT_IMAGE_GENERATION_TIMEOUT_SEC`, потому что запросы на картинку стабильно медленнее обычного текста.
 - **Причина**: генерация картинок самая медленная и “дорогая” по токенам/времени, особенно при нескольких событиях.
 - **Файлы**: `backend/app/core/config.py`, `backend/app/agent/orchestrator.py`, `backend/env.example`.
+
+## 14) Company enrichment через локальный demo-registry
+
+- **Решение**: организационный профиль клиента расширен полями `inn`, `ogrn`, `kpp`, `official_company_name`, `ceo_name`, `okved_code`, `okved_name`, `company_status`, `company_address`, `company_site`, `source_url`, `enrichment_status`, `enrichment_error`, `enriched_at`.
+  Enrichment работает через провайдерный слой: `demo`, `dadata` или `hybrid`, а локальные данные вынесены в `backend/app/resources/company_data/`.
+- **Причина**: нужен реально работающий enrichment-контур уже сейчас, но с понятным путём к реальному внешнему источнику по ИНН без переписывания UI/API.
+- **Файлы**: `backend/app/services/company_enrichment.py`, `backend/app/services/dadata_client.py`, `backend/app/resources/company_data/*`, `backend/app/db/models.py`, `backend/app/web/templates/clients.html`.
+
+## 15) Импорт условной базы компаний из CSV
+
+- **Решение**: CSV-справочник компаний хранится внутри `backend/app/resources/company_data/`, импортируется через отдельный сервис и upsert-логикой по `ИНН`.
+- **Причина**: корень репозитория не должен играть роль “склада данных”; импорт должен быть повторяемым, понятным и управляемым через UI/API.
+- **Файлы**: `backend/app/services/company_import.py`, `backend/app/resources/company_data/export-base_demo_takbup.csv`, `backend/app/web/router.py`, `backend/app/api/routes/clients.py`.
+
+## 16) Feedback loop для Human-in-the-Loop
+
+- **Решение**: менеджер может сохранить `score/outcome/notes` для каждого поздравления; feedback хранится в таблице `Feedback`, доступен через UI и API.
+- **Причина**: без операторской оценки невозможно показать “улучшение качества” и невозможно собирать сигналы для будущего ранжирования/обучения.
+- **Файлы**: `backend/app/services/feedback.py`, `backend/app/api/routes/feedback.py`, `backend/app/web/router.py`, `backend/app/web/templates/greetings.html`.
+
+## 17) Управляемый режим отправки через `.env`
+
+- **Решение**: время отправки вынесено в `DELIVERY_SCHEDULE_MODE` с режимами `event_date` и `immediate`; логика учитывается и при обычной отправке, и при VIP approve.
+- **Причина**: демо-сценарий и реальный сценарий доставки требуют разного поведения, и это должно включаться конфигом, а не “временными if-ами”.
+- **Файлы**: `backend/app/core/config.py`, `backend/app/services/due_sender.py`, `backend/app/services/approval.py`, `backend/env.example`.
+
+## 18) Ручные события для реальной клиентской базы
+
+- **Решение**: добавлен управляемый сценарий ручных событий: оператор может создать единичный повод для конкретного клиента или быстро подготовить demo-кампанию для нескольких реальных клиентов из импортированной базы.
+- **Причина**: реальные клиенты не обязаны иметь день рождения или релевантный праздник в окне `LOOKAHEAD_DAYS`, а демонстрация должна позволять запускать генерацию по импортированной базе уже сейчас.
+- **Файлы**: `backend/app/services/manual_events.py`, `backend/app/api/routes/events.py`, `backend/app/web/router.py`, `backend/app/web/templates/events.html`.
+
+## 19) Run-level аудит результатов генерации
+
+- **Решение**: каждое созданное агентом поздравление получает ссылку на `AgentRun`, а в UI появилась детальная страница запуска `/runs/{id}` со списком созданных поздравлений, их статусами, доставками и feedback.
+- **Причина**: для демонстрации и диагностики недостаточно общих счётчиков `AgentRun`; нужно прозрачно показывать, что именно сделал конкретный прогон и каков дальнейший результат по его объектам.
+- **Файлы**: `backend/app/db/models.py`, `backend/app/db/init_db.py`, `backend/app/agent/orchestrator.py`, `backend/app/web/router.py`, `backend/app/web/templates/runs.html`, `backend/app/web/templates/run_detail.html`.
+
+## 20) Post-generation funnel на dashboard
+
+- **Решение**: главная страница считает и показывает операционную воронку `generated -> needs approval -> delivered -> feedback`, а также ключевые health-метрики (`delivery errors`, `runs with issues`, `avg feedback score`).
+- **Причина**: для презентации нужен не только “журнал сущностей”, но и один экран, который быстро объясняет качество работы конвейера после запуска агента.
+- **Файлы**: `backend/app/web/router.py`, `backend/app/web/templates/dashboard.html`, `backend/tests/test_web_ui_pages.py`.
+
+## 21) Holiday knowledge layer для генерации вне ДР
+
+- **Решение**: встроенные календарные и профессиональные поводы вынесены в единый каталог с семантическими тегами (`category`, `focus_hint`, `prompt_hint`, `audience`), а эти теги передаются дальше в fallback и LLM-prompts.
+- **Причина**: одной даты и названия праздника недостаточно, если нужно масштабировать генерацию на разные сценарии, а не только на день рождения.
+- **Файлы**: `backend/app/services/holiday_catalog.py`, `backend/app/services/event_detector.py`, `backend/app/agent/generator.py`, `backend/app/agent/llm_prompts.py`, `backend/app/agent/text_generator.py`.
+
+## 22) Общий semantic-layer для prompt-building
+
+- **Решение**: добавлен единый слой `EventSemantics`, который собирает категорию, смысловой фокус, prompt_hint, guidance для текста и visual_theme для любого события (`birthday`, `holiday`, `manual`) и используется и в текстовой, и в image-генерации.
+- **Причина**: проект не должен эволюционировать через ручное добавление “ещё одного промпта на ещё один праздник”; масштабируемее строить генерацию через семантику повода и структурированные правила.
+- **Файлы**: `backend/app/agent/event_semantics.py`, `backend/app/agent/generator.py`, `backend/app/agent/llm_prompts.py`, `backend/app/agent/text_generator.py`, `backend/app/agent/gigachat_providers.py`.
+
+## 23) Branded HTML email для SMTP-канала
+
+- **Решение**: SMTP-отправка теперь формирует `multipart/alternative` письмо: plain-text версия остаётся для совместимости, а основная версия — HTML-письмо с зелёной акцентной шапкой, светлой читательской зоной, встроенной inline-иллюстрацией и отдельным бренд-блоком подписи. Внутри HTML оставлен только клиентский контент: заголовок, поздравительный текст, изображение и финальный бренд-блок без технических пояснений про внутренний пайплайн.
+- **Причина**: реальный email-канал не должен выглядеть как “текст + вложение из демо”; для презентации и дальнейшего использования нужен более продуктовый вид письма без отказа от совместимости.
+- **Файлы**: `backend/app/services/email_rendering.py`, `backend/app/services/sender.py`, `backend/tests/test_smtp_email_rendering.py`.
+
+## 24) Demo-stable GigaChat и fallback-доставка
+
+- **Решение**: для текстовой генерации через GigaChat усилен JSON-контракт ответа и снижен `temperature` по умолчанию до более стабильного режима; для image-generation введены event-specific presets (день рождения, Новый год, 8 Марта, business/manual), но сохранены общие запреты на людей и текст. В SMTP-режиме клиенты без пригодного email автоматически переводятся в file-outbox fallback вместо `error`.
+- **Причина**: демо не должно ломаться из-за “почти JSON” ответа модели, а визуальная генерация не должна сводить все праздники к одному и тому же сценарию. Отдельно важно, чтобы импортированные клиенты без реальной почты не валили прогон доставки.
+- **Файлы**: `backend/app/agent/llm_prompts.py`, `backend/app/agent/gigachat_providers.py`, `backend/app/core/config.py`, `backend/app/services/sender.py`, `backend/app/services/due_sender.py`, `backend/tests/test_gigachat_image_prompt.py`, `backend/tests/test_smtp_safety.py`, `backend/tests/test_scheduled_sending.py`.
 
 

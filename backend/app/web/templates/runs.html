@@ -1,48 +1,79 @@
 {% extends "base.html" %}
 {% block content %}
   <div class="d-flex align-items-center justify-content-between mb-3">
-    <div>
-      <h2 class="mb-1">Agent runs</h2>
-      <div class="text-muted">Аудит и статистика запусков агента</div>
+    <div class="page-intro">
+      <h2 class="mb-1">Запуски агента</h2>
+      <div class="text-muted">Аудит запусков, наблюдаемость конвейера и источник данных для презентации результатов.</div>
     </div>
   </div>
 
-  <div class="card">
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-md-3">
+      <div class="surface-panel metric-card">
+        <div class="metric-label">Всего запусков</div>
+        <div class="metric-value">{{ total_runs }}</div>
+        <div class="metric-hint">Запуски, записанные в AgentRun.</div>
+      </div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="surface-panel metric-card">
+        <div class="metric-label">Успешно</div>
+        <div class="metric-value">{{ status_totals.success }}</div>
+        <div class="metric-hint">Полностью успешные прогоны без ошибок.</div>
+      </div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="surface-panel metric-card">
+        <div class="metric-label">Частично</div>
+        <div class="metric-value">{{ status_totals.partial }}</div>
+        <div class="metric-hint">Прогоны с результатом и частичными ошибками.</div>
+      </div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="surface-panel metric-card">
+        <div class="metric-label">Ошибки</div>
+        <div class="metric-value">{{ status_totals.error }}</div>
+        <div class="metric-hint">Фатальные прогоны, требующие внимания.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="surface-card">
     <div class="card-header">Последние 100 запусков</div>
     <div class="card-body table-responsive">
-      <div class="small text-muted mb-2">
+      <div class="soft-note small text-muted mb-3">
         <b>Sent (auto)</b> — отправки, выполненные автоматически внутри агента. Отправки VIP после ручного
-        <b>Approve &amp; send</b> отображаются в Deliveries, но не увеличивают этот счётчик.
+        <b>Согласовать и отправить</b> отображается в Deliveries, но не увеличивает этот счётчик.
       </div>
-      <table class="table table-sm align-middle">
+      <table class="table table-sm align-middle table-clean">
         <thead>
           <tr>
             <th>ID</th>
-            <th>Status</th>
-            <th>Triggered by</th>
-            <th>Lookahead</th>
+            <th>Статус</th>
+            <th>Источник</th>
+            <th>Горизонт</th>
             <th>LLM</th>
-            <th>Image</th>
-            <th>Started</th>
-            <th>Finished</th>
-            <th>Events</th>
-            <th>Greetings</th>
-            <th>Sent (auto)</th>
-            <th>Skipped</th>
-            <th>Errors</th>
+            <th>Картинки</th>
+            <th>Старт</th>
+            <th>Финиш</th>
+            <th>События</th>
+            <th>Поздравления</th>
+            <th>Авто-отправка</th>
+            <th>Пропущено</th>
+            <th>Ошибки</th>
           </tr>
         </thead>
         <tbody>
           {% for r in runs %}
             <tr>
-              <td>{{ r.id }}</td>
+              <td class="fw-semibold"><a href="/runs/{{ r.id }}">#{{ r.id }}</a></td>
               <td>
                 {% if r.status == "success" %}
-                  <span class="badge text-bg-success">success</span>
+                  <span class="badge text-bg-success">успех</span>
                 {% elif r.status == "partial" %}
-                  <span class="badge text-bg-warning">partial</span>
+                  <span class="badge text-bg-warning">частично</span>
                 {% elif r.status == "error" %}
-                  <span class="badge text-bg-danger">error</span>
+                  <span class="badge text-bg-danger">ошибка</span>
                 {% else %}
                   <span class="badge text-bg-secondary">{{ r.status }}</span>
                 {% endif %}
@@ -58,6 +89,10 @@
               <td>{{ r.sent_deliveries }}</td>
               <td>{{ r.skipped_existing }}</td>
               <td>{{ r.errors }}</td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="13" class="empty-state">История запусков пока пуста. Нажмите `Запустить агента`, чтобы наполнить журнал.</td>
             </tr>
           {% endfor %}
         </tbody>

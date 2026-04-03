@@ -2,15 +2,18 @@ from __future__ import annotations
 
 import datetime as dt
 import random
+import re
 
-from fastapi import APIRouter, Depends
-from sqlalchemy import delete, select
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.db.models import Client
 from app.db.session import get_session
 from app.schemas.clients import ClientCreate, ClientOut
+from app.services.company_enrichment import enrich_client_company_by_id, enrich_missing_clients
+from app.services.company_import import import_clients_from_company_csv
 
 router = APIRouter(prefix="/clients")
 
@@ -24,7 +27,15 @@ async def list_clients(session: AsyncSession = Depends(get_session)) -> list[Cli
 async def create_client(
     payload: ClientCreate, session: AsyncSession = Depends(get_session)
 ) -> Client:
-    c = Client(**payload.model_dump())
+    data = payload.model_dump()
+    inn = re.sub(r"\D", "", data.get("inn") or "")
+    if inn and len(inn) not in {10, 12}:
+        raise HTTPException(status_code=400, detail="inn must contain 10 or 12 digits")
+    data["inn"] = inn or None
+    data["enrichment_status"] = data.get("enrichment_status") or (
+        "pending" if inn else "not_requested"
+    )
+    c = Client(**data)
     session.add(c)
     await session.commit()
     await session.refresh(c)
@@ -40,6 +51,21 @@ async def seed_demo(session: AsyncSession = Depends(get_session)) -> dict:
     return await seed_demo_clients(session, n=5, replace=False)
 
 
+@router.post("/enrich-missing")
+async def enrich_all_pending(session: AsyncSession = Depends(get_session)) -> dict:
+    return await enrich_missing_clients(session)
+
+
+@router.post("/import-company-base")
+async def import_company_base(session: AsyncSession = Depends(get_session)) -> dict:
+    return await import_clients_from_company_csv(session)
+
+
+@router.post("/{client_id}/enrich")
+async def enrich_client(client_id: int, session: AsyncSession = Depends(get_session)) -> dict:
+    return await enrich_client_company_by_id(session, client_id=client_id)
+
+
 def _demo_pool() -> list[dict]:
     """A diverse pool to sample from. We always seed only a small subset for token safety."""
     return [
@@ -48,6 +74,7 @@ def _demo_pool() -> list[dict]:
             "middle_name": "Олеговна",
             "last_name": "Морозова",
             "company_name": "ООО Безопасность+",
+            "inn": "7701122334",
             "position": "Руководитель службы безопасности",
             "profession": "security",
             "segment": "vip",
@@ -57,6 +84,7 @@ def _demo_pool() -> list[dict]:
             "middle_name": "Сергеевна",
             "last_name": "Громова",
             "company_name": "ООО Логистика-Профи",
+            "inn": "7802456789",
             "position": "Операционный директор",
             "profession": "logistics",
             "segment": "loyal",
@@ -66,6 +94,7 @@ def _demo_pool() -> list[dict]:
             "middle_name": "Андреевич",
             "last_name": "Мельников",
             "company_name": "АО ПромИнжиниринг",
+            "inn": "7723456781",
             "position": "Технический директор",
             "profession": "it",
             "segment": "standard",
@@ -75,6 +104,7 @@ def _demo_pool() -> list[dict]:
             "middle_name": "Павловна",
             "last_name": "Воронова",
             "company_name": "ООО Ритейл-Плюс",
+            "inn": "7712450099",
             "position": "Коммерческий директор",
             "profession": "sales",
             "segment": "vip",
@@ -84,6 +114,7 @@ def _demo_pool() -> list[dict]:
             "middle_name": "Игоревич",
             "last_name": "Сафронов",
             "company_name": "ЗАО ТехСтрой",
+            "inn": "7812001122",
             "position": "Финансовый директор",
             "profession": "finance",
             "segment": "loyal",
@@ -93,6 +124,7 @@ def _demo_pool() -> list[dict]:
             "middle_name": "Алексеевна",
             "last_name": "Кузнецова",
             "company_name": "ИП Кузнецова М.А.",
+            "inn": "7701987654",
             "position": "Владелец",
             "profession": "management",
             "segment": "new",
@@ -102,6 +134,7 @@ def _demo_pool() -> list[dict]:
             "middle_name": "Олеговна",
             "last_name": "Николаева",
             "company_name": "АО МедТех",
+            "inn": "7733557799",
             "position": "Руководитель проектов",
             "profession": "medicine",
             "segment": "standard",
@@ -111,6 +144,7 @@ def _demo_pool() -> list[dict]:
             "middle_name": "Викторович",
             "last_name": "Орлов",
             "company_name": "ООО АгроПром",
+            "inn": "7722884400",
             "position": "Директор по развитию",
             "profession": "marketing",
             "segment": "loyal",
@@ -120,6 +154,7 @@ def _demo_pool() -> list[dict]:
             "middle_name": "Михайловна",
             "last_name": "Романова",
             "company_name": "ООО Альфа-Логистика",
+            "inn": "7811882201",
             "position": "Генеральный директор",
             "profession": "management",
             "segment": "vip",
@@ -129,6 +164,7 @@ def _demo_pool() -> list[dict]:
             "middle_name": "Николаевич",
             "last_name": "Волков",
             "company_name": "ООО СеверЭнерго",
+            "inn": "7701228899",
             "position": "Коммерческий директор",
             "profession": "sales",
             "segment": "standard",
@@ -138,6 +174,7 @@ def _demo_pool() -> list[dict]:
             "middle_name": "Ивановна",
             "last_name": "Фёдорова",
             "company_name": "АО ТрансЛайн",
+            "inn": "7813445500",
             "position": "Директор по персоналу",
             "profession": "hr",
             "segment": "new",
@@ -147,6 +184,7 @@ def _demo_pool() -> list[dict]:
             "middle_name": "Денисович",
             "last_name": "Захаров",
             "company_name": "ООО ФинСервис",
+            "inn": "7701664400",
             "position": "Главный бухгалтер",
             "profession": "accounting",
             "segment": "standard",
@@ -156,6 +194,7 @@ def _demo_pool() -> list[dict]:
             "middle_name": "Сергеевич",
             "last_name": "Смирнов",
             "company_name": "ООО ДевСтудио",
+            "inn": "7801223300",
             "position": "CTO",
             "profession": "it",
             "segment": "standard",
@@ -165,6 +204,7 @@ def _demo_pool() -> list[dict]:
             "middle_name": "Петровна",
             "last_name": "Сергеева",
             "company_name": "ООО ТурбоМаркет",
+            "inn": "7712334401",
             "position": "Директор по маркетингу",
             "profession": "marketing",
             "segment": "new",
@@ -174,6 +214,7 @@ def _demo_pool() -> list[dict]:
             "middle_name": "Евгеньевич",
             "last_name": "Поляков",
             "company_name": "ООО СтройПроект",
+            "inn": "7714556677",
             "position": "Руководитель финансов",
             "profession": "construction",
             "segment": "loyal",
@@ -183,6 +224,7 @@ def _demo_pool() -> list[dict]:
             "middle_name": "Владимировна",
             "last_name": "Соколова",
             "company_name": "ООО Альфа-Логистика",
+            "inn": "7811882201",
             "position": "Генеральный директор",
             "profession": "logistics",
             "segment": "vip",
@@ -200,9 +242,10 @@ async def seed_demo_clients(
 ) -> dict:
     """Seed demo Clients.
 
-    - Picks a RANDOM subset of N clients from a diverse pool.
-    - Ensures their next birthday falls within the next lookahead window (today..today+lookahead_days),
-      so events are always today or in the future (no "past" demo events).
+    Presentation-oriented behavior:
+    - Picks a demo-friendly mix with mostly non-VIP clients plus one VIP.
+    - Sets birthdays to *today* so one agent run immediately demonstrates deliveries.
+    - Keeps one VIP client to preserve the approval scenario in the same dataset.
     - If replace=True, clears runtime data and replaces all clients with a new random set.
     """
     today = today or dt.date.today()
@@ -214,28 +257,29 @@ async def seed_demo_clients(
         # Ensure a clean demo: remove runtime artifacts and replace clients.
         from app.services.reset_runtime import reset_runtime_data
 
-        await reset_runtime_data(session)
-        await session.execute(delete(Client))
-        await session.commit()
+        await reset_runtime_data(session, clear_clients=True)
 
     pool = _demo_pool()
     if n > len(pool):
         return {"added": 0, "reason": f"n too large (max {len(pool)})"}
 
     rng: random.Random = random.Random(rng_seed) if rng_seed is not None else random.SystemRandom()  # type: ignore[assignment]
-    chosen = rng.sample(pool, k=n)
+    vip_candidates = [row for row in pool if (row.get("segment") or "").lower() == "vip"]
+    non_vip_candidates = [row for row in pool if (row.get("segment") or "").lower() != "vip"]
+    if n >= 2 and vip_candidates and len(non_vip_candidates) >= (n - 1):
+        safe_vip_candidates = [
+            row for row in vip_candidates if (row.get("profession") or "").lower() != "security"
+        ]
+        vip_choice = rng.choice(safe_vip_candidates or vip_candidates)
+        others = rng.sample(non_vip_candidates, k=n - 1)
+        chosen = [vip_choice, *others]
+        rng.shuffle(chosen)
+    else:
+        chosen = rng.sample(pool, k=n)
 
-    # Demo showpiece: ensure at least one client has a profession with a professional holiday today.
-    # (This helps demonstrate "не только день рождения".)
-    if not any((row.get("profession") == "security") for row in chosen):
-        spotlight = next((r for r in pool if r.get("profession") == "security"), None)
-        if spotlight is not None:
-            chosen[0] = spotlight
-
-    # Put birthdays inside the lookahead window so generated Events are never in the past.
+    # Put birthdays on today so one demo run immediately sends a visible batch.
     lookahead_days = int(getattr(settings, "lookahead_days", 7))
-    window = max(1, min(lookahead_days, 14))
-    offsets = rng.sample(range(0, window), k=n)
+    offsets = [0 for _ in range(n)]
 
     # Use a single commit (faster, fewer partial states).
     clients: list[Client] = []
@@ -250,17 +294,28 @@ async def seed_demo_clients(
                 middle_name=row.get("middle_name"),
                 last_name=row["last_name"],
                 company_name=row["company_name"],
+                official_company_name=None,
                 position=row["position"],
                 profession=row.get("profession"),
                 segment=row["segment"],
+                inn=row.get("inn"),
                 email=email,
                 preferred_channel="email",
                 birth_date=birth_date,
                 last_interaction_summary="",
+                enrichment_status="pending" if row.get("inn") else "not_requested",
                 is_demo=True,
             )
         )
 
     session.add_all(clients)
     await session.commit()
-    return {"added": len(clients), "replaced": replace, "lookahead_days": lookahead_days}
+    vip_count = sum(1 for row in chosen if (row.get("segment") or "").lower() == "vip")
+    auto_send_ready = max(0, len(chosen) - vip_count)
+    return {
+        "added": len(clients),
+        "replaced": replace,
+        "lookahead_days": lookahead_days,
+        "vip_count": vip_count,
+        "auto_send_ready": auto_send_ready,
+    }

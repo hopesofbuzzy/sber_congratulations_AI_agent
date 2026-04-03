@@ -21,7 +21,11 @@ class Settings(BaseSettings):
     max_gigachat_images_per_run: int = 5  # speed + token safety; rest uses Pillow fallback
 
     send_mode: str = "file"  # file|smtp|noop
+    delivery_schedule_mode: str = "event_date"  # event_date|immediate
     outbox_dir: str = "./data/outbox"
+
+    company_enrichment_provider: str = "demo"  # demo|dadata|hybrid
+    company_import_csv_path: str = "./app/resources/company_data/export-base_demo_takbup.csv"
 
     # SMTP (optional, real email sending)
     smtp_host: str | None = None
@@ -59,15 +63,25 @@ class Settings(BaseSettings):
     gigachat_oauth_url: str = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
     gigachat_base_url: str = "https://gigachat.devices.sberbank.ru/api/v1"
     gigachat_model: str = "GigaChat"
-    gigachat_temperature: float | None = None
+    gigachat_temperature: float | None = 0.1
     # Base timeout для обычных запросов (чат, текст)
     gigachat_timeout_sec: float = 30.0
+    # Генерация изображения через chat/completions заметно медленнее обычного текста.
+    gigachat_image_generation_timeout_sec: float = 120.0
     # Отдельный таймаут для скачивания изображений (обычно дольше, можно поднять для демо)
     gigachat_image_timeout_sec: float = 60.0
 
     # TLS / certificates
     gigachat_verify_ssl_certs: bool = True
     gigachat_ca_bundle_file: str | None = None
+
+    # DaData company enrichment (optional)
+    dadata_api_key: str | None = None
+    dadata_base_url: str = "https://suggestions.dadata.ru/suggestions/api/4_1/rs"
+    dadata_timeout_sec: float = 10.0
+    dadata_party_branch_type: str = "MAIN"
+    dadata_party_type: str = "LEGAL"
+    dadata_party_status: str = "ACTIVE"
 
 
 settings = Settings()

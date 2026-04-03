@@ -2,9 +2,72 @@ from __future__ import annotations
 
 import logging
 
+from app.agent.event_semantics import build_event_semantics
 from app.agent.gigachat_client import GigaChatClient, GigaChatError, extract_img_file_id
+from app.core.config import settings
 
 log = logging.getLogger(__name__)
+
+
+def _illustration_scene_brief(
+    *,
+    event_type: str,
+    event_title: str,
+    semantics_category: str,
+    semantics_focus: str,
+    audience: str,
+) -> str:
+    title_low = (event_title or "").strip().lower()
+    category = (semantics_category or "").strip().lower()
+    focus = (semantics_focus or "").strip().lower()
+    target_audience = (audience or "").strip().lower()
+
+    if (event_type or "").strip().lower() == "birthday":
+        return (
+            "аккуратный праздничный натюрморт: торт без надписей, несколько воздушных шаров, "
+            "подарочная коробка, мягкий свет, чистый белый или светлый фон"
+        )
+
+    if "новый год" in title_low:
+        return (
+            "новогодний натюрморт: еловые ветви, тёплые огни, ёлочные украшения, подарочная коробка, "
+            "уютная зимняя атмосфера, светлый фон"
+        )
+
+    if "8 марта" in title_low:
+        return (
+            "светлая весенняя композиция: элегантный букет цветов, ленты, подарочная коробка, "
+            "мягкий естественный свет, чистый светлый фон"
+        )
+
+    if "23 февраля" in title_low:
+        return (
+            "сдержанная торжественная композиция: подарочная коробка, благородный зелёный и графитовый декор, "
+            "аккуратные праздничные элементы, мягкий свет, светлый фон"
+        )
+
+    if category == "manual-business" or category == "business" or target_audience == "business":
+        return (
+            "премиальный деловой натюрморт: подарочная коробка, минималистичный декор, стеклянные и металлические акценты, "
+            "чистая композиция, мягкий студийный свет, светлый фон"
+        )
+
+    if focus == "care":
+        return (
+            "тёплая праздничная композиция: цветы, подарочная коробка, мягкие ленты, "
+            "спокойный свет, чистый светлый фон"
+        )
+
+    if focus == "renewal":
+        return (
+            "сезонный праздничный натюрморт: свет, обновление, декоративные ветви, подарочная коробка, "
+            "чистый светлый фон"
+        )
+
+    return (
+        "универсальный праздничный натюрморт: подарочная коробка, аккуратный декор, мягкий свет, "
+        "сдержанные зелёные акценты, чистый светлый фон"
+    )
 
 
 class GigaChatTextProvider:
@@ -16,7 +79,12 @@ class GigaChatTextProvider:
             messages=[
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
-            ]
+            ],
+            temperature=(
+                float(settings.gigachat_temperature)
+                if settings.gigachat_temperature is not None
+                else 0.1
+            ),
         )
         try:
             return data["choices"][0]["message"]["content"]
@@ -47,6 +115,7 @@ class GigaChatImageProvider:
                 {"role": "user", "content": prompt},
             ],
             function_call="auto",
+            timeout_sec=float(settings.gigachat_image_generation_timeout_sec),
             x_client_id=x_client_id,
         )
         try:
@@ -80,42 +149,44 @@ class GigaChatImageProvider:
         return file_id, jpg
 
 
-def _visual_theme(*, event_type: str, event_title: str) -> str:
-    t = (event_title or "").lower()
-    et = (event_type or "").lower()
-    if et == "birthday" or "день рождения" in t:
-        return (
-            "натюрморт: воздушные шары, праздничный торт со свечами (без надписей), конфетти, "
-            "тёплый свет, атмосфера праздника"
-        )
-    if "новый год" in t or "с наступающим" in t:
-        return "зимний уют: огни гирлянд, ель, подарки (без надписей), снежные огоньки, тёплый интерьер"
-    if "8 марта" in t:
-        return "весенние цветы: тюльпаны/пионы, мягкий свет, чистый фон, без надписей и открыток"
-    if et == "holiday":
-        return "абстрактная праздничная иллюстрация: свет, символы успеха, аккуратный минимализм, без надписей"
-    return "минималистичная деловая иллюстрация: свет, динамика, успех, без надписей"
-
-
 def build_illustration_prompt(
-    *, event_type: str, event_title: str, recipient_line: str, company: str | None
+    *,
+    event_type: str,
+    event_title: str,
+    recipient_line: str,
+    company: str | None,
+    event_details: dict | None = None,
+    segment: str | None = None,
+    profession: str | None = None,
 ) -> tuple[str, str]:
-    """Build prompt for a *text-free illustration* (NOT a greeting card).
-
-    Avoid the word 'открытка' to reduce the model's tendency to place text.
-
-    Uses direct "Нарисуй" command format as per GigaChat docs examples.
-    """
+    """Build prompt for a text-free celebratory still life with event-specific presets."""
     style = (
-        "Ты — художник, создающий изображения для поздравлений.\n"
-        "Стиль: современная фотореалистичная иллюстрация/фото-стиль, зелёные оттенки (ассоциация со Сбером), минимализм.\n"
-        "КРИТИЧЕСКИ ВАЖНО: НИКАКОГО ТЕКСТА на изображении — 0 букв, 0 слов, 0 цифр, 0 водяных знаков, 0 логотипов, 0 табличек.\n"
-        "Запрет также на надписи на предметах: торт, шары, упаковки, вывески.\n"
-        "Никаких рамок, макетов, декоративных элементов с текстом.\n"
-        "Только чистая иллюстрация/фото без текста.\n"
+        "Ты создаёшь простую и аккуратную поздравительную иллюстрацию.\n"
+        "Стиль: минималистичный праздничный натюрморт, чистая композиция, светлый фон, мягкий студийный свет, сдержанные зелёные акценты.\n"
+        "Используй только предметную композицию без сюжетных сцен и без людей.\n"
+        "КРИТИЧЕСКИ ВАЖНО: никаких людей, лиц, рук, силуэтов, толпы, детей, персонажей, животных.\n"
+        "КРИТИЧЕСКИ ВАЖНО: никакого текста — 0 букв, 0 слов, 0 цифр, 0 логотипов, 0 вывесок, 0 водяных знаков.\n"
+        "Запрещены офисные сцены, город, переговоры, командные сцены, интерьер с людьми и любые сюжетные персонажи.\n"
+        "Если повод не связан с днём рождения, не добавляй торт и воздушные шары.\n"
+        "Нужна только чистая праздничная иллюстрация без текста и без людей.\n"
     )
-    theme = _visual_theme(event_type=event_type, event_title=event_title)
-    # Use direct "Нарисуй" command as per GigaChat docs - simpler and more reliable
-    # Don't include recipient/company in main prompt to keep it simple and direct
-    prompt = f"Нарисуй {theme}."
+    semantics = build_event_semantics(
+        event_type=event_type,
+        event_title=event_title,
+        event_details=event_details or {},
+        segment=segment,
+        profession=profession,
+    )
+    scene_brief = _illustration_scene_brief(
+        event_type=event_type,
+        event_title=event_title,
+        semantics_category=semantics.category,
+        semantics_focus=semantics.focus_hint,
+        audience=semantics.audience,
+    )
+    prompt = (
+        f"Нарисуй простую праздничную иллюстрацию для повода «{event_title}»: {scene_brief}. "
+        f"Смысловой акцент: {semantics.prompt_hint}. "
+        "Без людей, без лиц, без рук, без толпы, без офиса, без города, без текста."
+    )
     return style, prompt

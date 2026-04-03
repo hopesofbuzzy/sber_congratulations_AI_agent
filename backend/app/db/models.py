@@ -22,10 +22,26 @@ class Client(Base):
     middle_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     last_name: Mapped[str] = mapped_column(String(100))
     company_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    official_company_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     position: Mapped[str | None] = mapped_column(String(200), nullable=True)
     # Professional area for "professional holidays" (optional in DB, but demo/manual UI can require it).
     profession: Mapped[str | None] = mapped_column(String(80), nullable=True)
     segment: Mapped[str] = mapped_column(String(50), default="standard")  # vip|new|loyal|standard
+    inn: Mapped[str | None] = mapped_column(String(12), nullable=True)
+    ogrn: Mapped[str | None] = mapped_column(String(15), nullable=True)
+    kpp: Mapped[str | None] = mapped_column(String(9), nullable=True)
+    ceo_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    okved_code: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    okved_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    company_status: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    company_address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    company_site: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    source_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    enrichment_status: Mapped[str] = mapped_column(
+        String(50), default="not_requested"
+    )  # not_requested|pending|enriched|error
+    enrichment_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    enriched_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     email: Mapped[str | None] = mapped_column(String(320), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
@@ -92,6 +108,7 @@ class Greeting(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     event_id: Mapped[int] = mapped_column(ForeignKey("events.id"))
     client_id: Mapped[int | None] = mapped_column(ForeignKey("clients.id"), nullable=True)
+    agent_run_id: Mapped[int | None] = mapped_column(ForeignKey("agent_runs.id"), nullable=True)
 
     tone: Mapped[str] = mapped_column(String(50), default="official")
     subject: Mapped[str] = mapped_column(String(250))
@@ -114,7 +131,9 @@ class Greeting(Base):
 
     event: Mapped[Event] = relationship(back_populates="greetings")
     client: Mapped[Client | None] = relationship(back_populates="greetings")
+    agent_run: Mapped["AgentRun"] = relationship(back_populates="greetings")
     deliveries: Mapped[list["Delivery"]] = relationship(back_populates="greeting")
+    feedback_entries: Mapped[list["Feedback"]] = relationship(back_populates="greeting")
 
 
 class Delivery(Base):
@@ -145,6 +164,8 @@ class Feedback(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
+    greeting: Mapped[Greeting] = relationship(back_populates="feedback_entries")
+
 
 class AgentRun(Base):
     __tablename__ = "agent_runs"
@@ -170,3 +191,4 @@ class AgentRun(Base):
     errors: Mapped[int] = mapped_column(default=0)
 
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    greetings: Mapped[list[Greeting]] = relationship(back_populates="agent_run")
