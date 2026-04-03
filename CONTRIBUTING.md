@@ -11,7 +11,7 @@
 git checkout -b feat/short-description
 ```
 
-3) Убедитесь, что проект запускается локально (см. `README.md`).  
+3) Убедитесь, что проект запускается локально (см. `README.md` и `SETUP.md`).  
 4) Добавьте/обновите тесты, если меняете бизнес-логику.  
 5) Перед PR:
 
@@ -20,6 +20,25 @@ cd backend
 python -m pytest -q
 python -m ruff check .
 python -m black --check .
+```
+
+## Быстрый локальный setup
+
+### Windows
+
+```bat
+scripts\setup_backend.cmd
+scripts\run_backend.cmd
+```
+
+### Linux/macOS
+
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt -r requirements-dev.txt
+cp env.example .env
 ```
 
 ## Стиль кода

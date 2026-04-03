@@ -1,11 +1,27 @@
 # Changelog
 
-## Unreleased
+All notable changes to this project will be documented in this file.
 
-- Initial MVP: конвейер поздравлений (events → generate → send), web UI, API, tests, scripts.
-- Docs/scripts: дефолтный порт запуска `run_backend.cmd` → **8001**, добавлен `scripts/kill_port.cmd`, добавлен `SETUP.md`.
-- Added: VIP approval gating (`needs_approval`) and AgentRun audit (runs page).
-- Improved: GigaChat card prompts (no text), text privacy (no last interaction details), reset runtime button, seed demo diversity, holiday recipient limit.
-- Fixed: GigaChat image generation — упрощен промпт до формата "Нарисуй ..." (соответствует документации), улучшен парсер file_id, добавлено детальное логирование для отладки.
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and the repository follows a lightweight semantic versioning approach for releases.
+
+## [Unreleased]
+
+### Added
+- Базовый конвейер поздравлений: события -> генерация -> доставка, web UI, API, тесты и локальные скрипты запуска.
+- VIP approval gating (`needs_approval`) и аудит запусков через `AgentRun`.
+- Company enrichment layer: импорт CSV, поля `ИНН/ОКВЭД/руководитель`, провайдеры `demo`, `dadata`, `hybrid`.
+- Feedback loop для оценки качества поздравлений и ручные события для импортированной базы.
+- Командные документы `docs/TEAM_WORKFLOW.md` и `docs/ISSUES_BOOTSTRAP.md`.
+
+### Changed
+- Публичная документация приведена к более профессиональной структуре: краткий `README`, отдельный `SETUP.md`, обзор проекта и краткая инструкция по GigaChat.
+- Дефолтный запуск `run_backend.cmd` использует порт `8001`.
+- Генерация изображений через GigaChat использует event-specific presets и строгие запреты на людей и текст.
+
+### Fixed
+- SMTP fallback для клиентов без пригодного email.
+- Стабильность JSON-ответа GigaChat и обработка “почти JSON” сценариев.
+- Повторяемость demo-flow: reset runtime data, контроль лимитов и улучшенные outbox-сценарии.
 
 

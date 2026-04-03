@@ -1,21 +1,61 @@
-# Code of Conduct
+# Contributor Covenant Code of Conduct
 
-Мы стремимся поддерживать уважительную и безопасную среду для всех участников.
+## Our Pledge
 
-## Ожидаемое поведение
+We as contributors and maintainers pledge to make participation in this project
+a harassment-free experience for everyone, regardless of age, body size,
+visible or invisible disability, ethnicity, sex characteristics, gender
+identity and expression, level of experience, education, socio-economic status,
+nationality, personal appearance, race, religion, or sexual identity and
+orientation.
 
-- Уважение и конструктивность в обсуждениях.
-- Обратная связь по делу, без перехода на личности.
-- Учет разнообразия опыта и мнений.
+We pledge to act and interact in ways that contribute to an open, welcoming,
+diverse, inclusive, and healthy environment.
 
-## Неприемлемое поведение
+## Our Standards
 
-- Оскорбления, дискриминация, травля.
-- Публикация конфиденциальных данных (секретов, персональных данных).
-- Призывы к насилию или угрозы.
+Examples of behavior that contributes to a positive environment include:
 
-## Применение
+- Demonstrating empathy and kindness toward other people
+- Being respectful of differing opinions, viewpoints, and experiences
+- Giving and gracefully accepting constructive feedback
+- Taking responsibility for mistakes and learning from them
+- Focusing on what is best for the project and the community
 
-При нарушениях создайте issue с пометкой **conduct** или свяжитесь с владельцем репозитория.
+Examples of unacceptable behavior include:
+
+- The use of sexualized language or imagery, and sexual attention or advances of any kind
+- Trolling, insulting or derogatory comments, and personal or political attacks
+- Public or private harassment
+- Publishing others' private information, such as a physical or email address, without explicit permission
+- Sharing secrets, private client data, or other sensitive project materials
+- Other conduct which could reasonably be considered inappropriate in a professional setting
+
+## Enforcement Responsibilities
+
+Project maintainers are responsible for clarifying and enforcing these standards
+of acceptable behavior and may take appropriate and fair corrective action in
+response to any behavior that they deem inappropriate, threatening, offensive,
+or harmful.
+
+## Scope
+
+This Code of Conduct applies within all project spaces, including repository
+discussions, issues, pull requests, code reviews, and official project
+communication channels.
+
+## Enforcement
+
+Instances of abusive, harassing, or otherwise unacceptable behavior may be
+reported privately to the repository owner or project maintainers.
+
+All complaints will be reviewed and investigated promptly and fairly. Project
+maintainers are obligated to respect the privacy and security of the reporter.
+
+## Attribution
+
+This Code of Conduct is adapted from the [Contributor Covenant](https://www.contributor-covenant.org/),
+version 2.0, available at
+<https://www.contributor-covenant.org/version/2/0/code_of_conduct.html>.
 
 

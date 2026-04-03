@@ -243,7 +243,6 @@ Data/Enrichment инженер.
   - `docs/PROJECT_OVERVIEW.md`
   - `docs/TEAM_WORKFLOW.md`
   - `ROADMAP.md`
-  - `ROADMAP_INTERNAL.md`
   - `backend/env.example`
 - Поддерживать CI как минимальный quality gate:
   - `pytest`
